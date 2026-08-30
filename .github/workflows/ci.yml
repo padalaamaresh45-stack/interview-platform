@@ -38,3 +38,16 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/interview_platform
         run: pytest
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm run build
