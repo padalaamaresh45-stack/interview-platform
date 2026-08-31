@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export function AuthenticatedShell() {
@@ -18,6 +18,7 @@ export function AuthenticatedShell() {
     <div>
       <header>
         <span>{user.full_name}</span> ({user.role})
+        {user.role === "admin" && <Link to="/positions">Positions</Link>}
         <button onClick={handleLogout}>Log out</button>
       </header>
       <Outlet />

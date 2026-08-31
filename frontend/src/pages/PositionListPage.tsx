@@ -1,0 +1,87 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { createPosition, listPositions, type Position } from "../api/positions";
+
+export function PositionListPage() {
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  async function refresh() {
+    setLoading(true);
+    try {
+      setPositions(await listPositions());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await createPosition(newTitle);
+      setNewTitle("");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <main>
+      <h1>Positions</h1>
+      {error && <p role="alert">{error}</p>}
+
+      <form onSubmit={handleCreate}>
+        <label htmlFor="new-position-title">New position title</label>
+        <input
+          id="new-position-title"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          required
+        />
+        <button type="submit" disabled={creating}>
+          {creating ? "Creating…" : "Create position"}
+        </button>
+      </form>
+
+      {loading ? (
+        <p>Loading…</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Questions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {positions.map((position) => (
+              <tr key={position.id}>
+                <td>
+                  <Link to={`/positions/${position.id}`}>{position.title}</Link>
+                </td>
+                <td>
+                  {position.question_count}
+                  {position.question_count === 0 && <span> — 0 questions</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </main>
+  );
+}
