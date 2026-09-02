@@ -59,6 +59,8 @@ export function PositionListPage() {
 
       {loading ? (
         <p>Loading…</p>
+      ) : positions.length === 0 ? (
+        <p>No positions yet — create one above to get started.</p>
       ) : (
         <table>
           <thead>

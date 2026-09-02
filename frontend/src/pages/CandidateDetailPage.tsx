@@ -81,7 +81,7 @@ export function CandidateDetailPage() {
   if (candidate === null) {
     return (
       <main>
-        <p>{error ?? "Loading…"}</p>
+        {error ? <p role="alert">{error}</p> : <p>Loading…</p>}
       </main>
     );
   }

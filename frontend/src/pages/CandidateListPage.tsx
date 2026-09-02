@@ -112,6 +112,8 @@ export function CandidateListPage() {
 
       {loading ? (
         <p>Loading…</p>
+      ) : candidates.length === 0 ? (
+        <p>No candidates yet — create one above to get started.</p>
       ) : (
         <table>
           <thead>

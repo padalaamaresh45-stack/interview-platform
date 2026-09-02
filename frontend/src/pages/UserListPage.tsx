@@ -130,6 +130,8 @@ export function UserListPage() {
 
       {loading ? (
         <p>Loading…</p>
+      ) : users.length === 0 ? (
+        <p>No users yet — create one above to get started.</p>
       ) : (
         <table>
           <thead>
