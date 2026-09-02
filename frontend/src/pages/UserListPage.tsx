@@ -84,6 +84,8 @@ export function UserListPage() {
     if (!newPasswordValue) return;
     try {
       await resetPassword(user.id, newPasswordValue);
+      setError(null);
+      window.alert(`Password reset for ${user.email}. Relay the new password to them out-of-band.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }

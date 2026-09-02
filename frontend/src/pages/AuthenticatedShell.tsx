@@ -2,8 +2,12 @@ import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export function AuthenticatedShell() {
-  const { user, logout } = useAuth();
+  const { user, initializing, logout } = useAuth();
   const navigate = useNavigate();
+
+  if (initializing) {
+    return <p>Loading…</p>;
+  }
 
   if (user === null) {
     return <Navigate to="/login" replace />;

@@ -26,12 +26,17 @@ export function PositionDetailPage() {
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
   const [editingQuestionText, setEditingQuestionText] = useState("");
 
+  function nextSequenceOrder(questionList: Question[]): number {
+    return questionList.length === 0 ? 1 : Math.max(...questionList.map((q) => q.sequence_order)) + 1;
+  }
+
   async function refresh() {
     try {
       const [found, questionList] = await Promise.all([getPosition(id), listQuestions(id)]);
       setPosition(found ?? null);
       setTitleDraft(found?.title ?? "");
       setQuestions(questionList);
+      setNewQuestionOrder(String(nextSequenceOrder(questionList)));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -59,8 +64,7 @@ export function PositionDetailPage() {
     try {
       await createQuestion(id, newQuestionText, Number(newQuestionOrder));
       setNewQuestionText("");
-      setNewQuestionOrder("");
-      await refresh();
+      await refresh(); // also resets newQuestionOrder to the next suggested value
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }
@@ -157,6 +161,7 @@ export function PositionDetailPage() {
         <input
           id="new-question-order"
           type="number"
+          min={0}
           value={newQuestionOrder}
           onChange={(e) => setNewQuestionOrder(e.target.value)}
           required

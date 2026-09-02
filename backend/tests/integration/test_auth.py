@@ -23,6 +23,32 @@ def _make_user(db_session, *, email=ADMIN_EMAIL, password=ADMIN_PASSWORD, role=U
     return user
 
 
+def test_me_returns_current_user_when_session_is_valid(client, db_session):
+    user = _make_user(db_session)
+    client.post("/api/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["id"] == user.id
+    assert body["email"] == ADMIN_EMAIL
+    assert body["role"] == "admin"
+
+
+def test_me_returns_401_without_a_session(client, db_session):
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 401
+
+
+def test_me_returns_401_after_logout(client, db_session):
+    _make_user(db_session)
+    client.post("/api/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+    client.post("/api/auth/logout")
+
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 401
+
+
 def test_login_sets_session_cookie_and_logout_invalidates_it(client, db_session):
     _make_user(db_session)
 

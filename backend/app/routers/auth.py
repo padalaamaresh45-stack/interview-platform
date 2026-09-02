@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session as DBSession
 
+from app.auth.dependencies import get_current_user
 from app.auth.hashing import verify_password
 from app.auth.session import SESSION_COOKIE_NAME, create_session, delete_session
 from app.config import settings
@@ -11,6 +12,11 @@ from app.schemas.auth import LoginRequest, LoginResponse
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 _GENERIC_LOGIN_ERROR = "Invalid email or password."
+
+
+@router.get("/me", response_model=LoginResponse)
+def me(user: User = Depends(get_current_user)):
+    return LoginResponse(id=user.id, email=user.email, full_name=user.full_name, role=user.role.value)
 
 
 @router.post("/login", response_model=LoginResponse)

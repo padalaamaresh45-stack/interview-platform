@@ -23,8 +23,16 @@ function renderShell() {
 }
 
 describe("AuthenticatedShell", () => {
+  it("shows a loading state instead of redirecting while the session check is in flight", () => {
+    mockUseAuth.mockReturnValue({ user: null, initializing: true, login: vi.fn(), logout: vi.fn() });
+    renderShell();
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.queryByText("Login page")).not.toBeInTheDocument();
+    expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
+  });
+
   it("redirects to /login instead of rendering protected content when there is no session", () => {
-    mockUseAuth.mockReturnValue({ user: null, login: vi.fn(), logout: vi.fn() });
+    mockUseAuth.mockReturnValue({ user: null, initializing: false, login: vi.fn(), logout: vi.fn() });
     renderShell();
     expect(screen.getByText("Login page")).toBeInTheDocument();
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
@@ -33,6 +41,7 @@ describe("AuthenticatedShell", () => {
   it("renders admin-only navigation for an admin session", () => {
     mockUseAuth.mockReturnValue({
       user: { id: 1, email: "admin@example.com", full_name: "Ada Admin", role: "admin" },
+      initializing: false,
       login: vi.fn(),
       logout: vi.fn(),
     });
@@ -47,6 +56,7 @@ describe("AuthenticatedShell", () => {
   it("renders only the interviewer's own queue link for an interviewer session, not admin surfaces", () => {
     mockUseAuth.mockReturnValue({
       user: { id: 2, email: "iv@example.com", full_name: "Ivy Interviewer", role: "interviewer" },
+      initializing: false,
       login: vi.fn(),
       logout: vi.fn(),
     });

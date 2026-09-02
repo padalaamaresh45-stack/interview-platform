@@ -2,11 +2,17 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { createCandidate, listActiveInterviewers, listCandidates, type Candidate, type Interviewer } from "../api/candidates";
 import { listPositions, type Position } from "../api/positions";
+import { listUsers, type AdminUser } from "../api/users";
 
 export function CandidateListPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  // Active-only — used for the create-candidate picker, which must exclude
+  // deactivated interviewers from new assignments.
   const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
+  // Every interviewer, active or not — used only to render a real name instead
+  // of "#id" for candidates already assigned to a since-deactivated interviewer.
+  const [allInterviewers, setAllInterviewers] = useState<AdminUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,14 +26,16 @@ export function CandidateListPage() {
   async function refresh() {
     setLoading(true);
     try {
-      const [candidateList, positionList, interviewerList] = await Promise.all([
+      const [candidateList, positionList, interviewerList, userList] = await Promise.all([
         listCandidates(),
         listPositions(),
         listActiveInterviewers(),
+        listUsers(),
       ]);
       setCandidates(candidateList);
       setPositions(positionList);
       setInterviewers(interviewerList);
+      setAllInterviewers(userList.filter((u) => u.role === "interviewer"));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -59,7 +67,11 @@ export function CandidateListPage() {
   }
 
   const positionTitle = (id: number) => positions.find((p) => p.id === id)?.title ?? `#${id}`;
-  const interviewerName = (id: number) => interviewers.find((i) => i.id === id)?.full_name ?? `#${id}`;
+  const interviewerName = (id: number) => {
+    const interviewer = allInterviewers.find((i) => i.id === id);
+    if (interviewer === undefined) return `#${id}`;
+    return interviewer.is_active ? interviewer.full_name : `${interviewer.full_name} (deactivated)`;
+  };
 
   return (
     <main>

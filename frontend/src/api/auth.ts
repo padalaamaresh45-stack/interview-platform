@@ -22,3 +22,11 @@ export async function login(email: string, password: string): Promise<CurrentUse
 export async function logout(): Promise<void> {
   await apiFetch("/api/auth/logout", { method: "POST" });
 }
+
+export async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  const res = await apiFetch("/api/auth/me");
+  if (!res.ok) {
+    return null;
+  }
+  return res.json();
+}

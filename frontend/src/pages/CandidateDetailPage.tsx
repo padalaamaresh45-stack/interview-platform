@@ -1,14 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  deleteCandidate,
-  getCandidate,
-  listActiveInterviewers,
-  updateCandidate,
-  type Candidate,
-  type Interviewer,
-} from "../api/candidates";
+import { deleteCandidate, getCandidate, updateCandidate, type Candidate } from "../api/candidates";
 import { listPositions, type Position } from "../api/positions";
+import { listUsers, type AdminUser } from "../api/users";
 
 export function CandidateDetailPage() {
   const { candidateId } = useParams<{ candidateId: string }>();
@@ -17,7 +11,12 @@ export function CandidateDetailPage() {
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
+  // All interviewers (active and deactivated), not just the active-only picker
+  // list — the currently assigned interviewer must always have a real <option>
+  // to bind to, even if they've since been deactivated, or the <select> falls
+  // back to whatever option happens to be first and a Save with no intended
+  // change would silently reassign the candidate to the wrong person.
+  const [interviewers, setInterviewers] = useState<AdminUser[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -27,14 +26,14 @@ export function CandidateDetailPage() {
 
   async function refresh() {
     try {
-      const [candidateData, positionList, interviewerList] = await Promise.all([
+      const [candidateData, positionList, userList] = await Promise.all([
         getCandidate(id),
         listPositions(),
-        listActiveInterviewers(),
+        listUsers(),
       ]);
       setCandidate(candidateData);
       setPositions(positionList);
-      setInterviewers(interviewerList);
+      setInterviewers(userList.filter((u) => u.role === "interviewer"));
       setFullName(candidateData.full_name);
       setEmail(candidateData.email ?? "");
       setPhone(candidateData.phone ?? "");
@@ -116,8 +115,13 @@ export function CandidateDetailPage() {
           disabled={!canChangeAssignment}
         >
           {interviewers.map((interviewer) => (
-            <option key={interviewer.id} value={interviewer.id}>
+            <option
+              key={interviewer.id}
+              value={interviewer.id}
+              disabled={!interviewer.is_active && interviewer.id !== candidate.interviewer_id}
+            >
               {interviewer.full_name}
+              {!interviewer.is_active && " (deactivated)"}
             </option>
           ))}
         </select>
