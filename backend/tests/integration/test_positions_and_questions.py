@@ -1,5 +1,6 @@
 from app.auth.hashing import hash_password
 from app.auth.session import SESSION_COOKIE_NAME, create_session
+from app.models.candidate import Candidate
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
@@ -99,12 +100,24 @@ def test_sequence_order_collision_returns_clean_400(client, db_session):
     assert collision.status_code == 400
 
 
+def _make_candidate(db_session, admin, position, interviewer):
+    candidate = Candidate(
+        full_name="Cara Candidate", position_id=position.id, interviewer_id=interviewer.id, created_by=admin.id
+    )
+    db_session.add(candidate)
+    db_session.commit()
+    db_session.refresh(candidate)
+    return candidate
+
+
 def test_edit_question_text_with_existing_scores_succeeds_and_leaves_scores_untouched(client, db_session):
     admin = _admin_client(client, db_session)
     position = _make_position(db_session, admin)
     question = _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
 
-    score = InterviewScore(question_id=question.id, candidate_id=1, score=4, comment="Solid answer.")
+    score = InterviewScore(question_id=question.id, candidate_id=candidate.id, score=4, comment="Solid answer.")
     db_session.add(score)
     db_session.commit()
     db_session.refresh(score)
@@ -134,9 +147,11 @@ def test_delete_question_with_scores_returns_400_naming_count(client, db_session
     admin = _admin_client(client, db_session)
     position = _make_position(db_session, admin)
     question = _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
 
-    for _ in range(3):
-        db_session.add(InterviewScore(question_id=question.id, candidate_id=1, score=3))
+    for i in range(3):
+        candidate = _make_candidate(db_session, admin, position, interviewer)
+        db_session.add(InterviewScore(question_id=question.id, candidate_id=candidate.id, score=3))
     db_session.commit()
 
     resp = client.delete(f"/api/admin/questions/{question.id}")

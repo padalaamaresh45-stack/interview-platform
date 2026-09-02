@@ -5,6 +5,8 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { CandidateDetailPage } from "./pages/CandidateDetailPage";
 import { CandidateListPage } from "./pages/CandidateListPage";
+import { InterviewerQueuePage } from "./pages/InterviewerQueuePage";
+import { InterviewerScorecardPage } from "./pages/InterviewerScorecardPage";
 import { PositionDetailPage } from "./pages/PositionDetailPage";
 import { PositionListPage } from "./pages/PositionListPage";
 import { UserListPage } from "./pages/UserListPage";
@@ -22,6 +24,8 @@ function App() {
             <Route path="/users" element={<UserListPage />} />
             <Route path="/candidates" element={<CandidateListPage />} />
             <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
+            <Route path="/my-candidates" element={<InterviewerQueuePage />} />
+            <Route path="/my-candidates/:candidateId" element={<InterviewerScorecardPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

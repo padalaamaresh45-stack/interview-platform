@@ -25,6 +25,7 @@ export function AuthenticatedShell() {
             <Link to="/candidates">Candidates</Link>
           </>
         )}
+        {user.role === "interviewer" && <Link to="/my-candidates">My Candidates</Link>}
         <button onClick={handleLogout}>Log out</button>
       </header>
       <Outlet />
