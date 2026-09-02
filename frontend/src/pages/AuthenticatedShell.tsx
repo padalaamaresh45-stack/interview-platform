@@ -18,7 +18,12 @@ export function AuthenticatedShell() {
     <div>
       <header>
         <span>{user.full_name}</span> ({user.role})
-        {user.role === "admin" && <Link to="/positions">Positions</Link>}
+        {user.role === "admin" && (
+          <>
+            <Link to="/positions">Positions</Link>
+            <Link to="/users">Users</Link>
+          </>
+        )}
         <button onClick={handleLogout}>Log out</button>
       </header>
       <Outlet />
