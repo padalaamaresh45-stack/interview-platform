@@ -3,6 +3,8 @@ import { AuthProvider } from "./hooks/useAuth";
 import { AuthenticatedShell } from "./pages/AuthenticatedShell";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { CandidateDetailPage } from "./pages/CandidateDetailPage";
+import { CandidateListPage } from "./pages/CandidateListPage";
 import { PositionDetailPage } from "./pages/PositionDetailPage";
 import { PositionListPage } from "./pages/PositionListPage";
 import { UserListPage } from "./pages/UserListPage";
@@ -18,6 +20,8 @@ function App() {
             <Route path="/positions" element={<PositionListPage />} />
             <Route path="/positions/:positionId" element={<PositionDetailPage />} />
             <Route path="/users" element={<UserListPage />} />
+            <Route path="/candidates" element={<CandidateListPage />} />
+            <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

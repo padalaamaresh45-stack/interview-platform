@@ -22,6 +22,7 @@ export function AuthenticatedShell() {
           <>
             <Link to="/positions">Positions</Link>
             <Link to="/users">Users</Link>
+            <Link to="/candidates">Candidates</Link>
           </>
         )}
         <button onClick={handleLogout}>Log out</button>
