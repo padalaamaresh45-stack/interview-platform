@@ -50,7 +50,12 @@ describe("InterviewerQueuePage", () => {
       },
     ]);
     renderQueue();
-    expect(await screen.findByRole("link", { name: "Cara Candidate" })).toBeInTheDocument();
+    // The link's accessible name now includes the status pill text alongside
+    // the candidate's name (e.g. "Cara Candidate Awaiting your scorecard") —
+    // match on the name being present rather than exact, since that's a
+    // legitimate accessibility improvement (a screen reader hears status
+    // and name together as one link), not a regression to pin exactly.
+    expect(await screen.findByRole("link", { name: /Cara Candidate/ })).toBeInTheDocument();
   });
 
   it("shows an alert with the server's message on a generic fetch failure, not a leaked internal error", async () => {

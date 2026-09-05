@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.auth.dependencies import require_admin
 from app.database import get_db
+from app.models.candidate import Candidate
 from app.models.position import Position
 from app.models.question import Question
 from app.models.user import User
@@ -21,11 +22,12 @@ def _get_position_or_404(db: DBSession, position_id: int) -> Position:
     return position
 
 
-def _to_position_out(position: Position, question_count: int) -> PositionOut:
+def _to_position_out(position: Position, question_count: int, candidate_count: int = 0) -> PositionOut:
     return PositionOut(
         id=position.id,
         title=position.title,
         question_count=question_count,
+        candidate_count=candidate_count,
         created_at=position.created_at,
         updated_at=position.updated_at,
     )
@@ -33,6 +35,10 @@ def _to_position_out(position: Position, question_count: int) -> PositionOut:
 
 def _count_questions(db: DBSession, position_id: int) -> int:
     return db.query(func.count(Question.id)).filter(Question.position_id == position_id).scalar()
+
+
+def _count_candidates(db: DBSession, position_id: int) -> int:
+    return db.query(func.count(Candidate.id)).filter(Candidate.position_id == position_id).scalar()
 
 
 @router.post("", response_model=PositionOut, status_code=status.HTTP_201_CREATED)
@@ -45,7 +51,7 @@ def create_position(
     db.add(position)
     db.commit()
     db.refresh(position)
-    return _to_position_out(position, question_count=0)
+    return _to_position_out(position, question_count=0, candidate_count=0)
 
 
 @router.get("", response_model=list[PositionOut])
@@ -53,14 +59,20 @@ def list_positions(
     db: DBSession = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
-    rows = (
-        db.query(Position, func.count(Question.id))
-        .outerjoin(Question, Question.position_id == Position.id)
-        .group_by(Position.id)
-        .order_by(Position.id)
-        .all()
+    # Two separate group-bys rather than one query joining both Question and
+    # Candidate: joining both at once cross-multiplies rows (N questions × M
+    # candidates per position), inflating both counts.
+    question_counts = dict(
+        db.query(Question.position_id, func.count(Question.id)).group_by(Question.position_id).all()
     )
-    return [_to_position_out(position, question_count) for position, question_count in rows]
+    candidate_counts = dict(
+        db.query(Candidate.position_id, func.count(Candidate.id)).group_by(Candidate.position_id).all()
+    )
+    positions = db.query(Position).order_by(Position.id).all()
+    return [
+        _to_position_out(position, question_counts.get(position.id, 0), candidate_counts.get(position.id, 0))
+        for position in positions
+    ]
 
 
 @router.patch("/{position_id}", response_model=PositionOut)
@@ -74,7 +86,7 @@ def update_position(
     position.title = payload.title
     db.commit()
     db.refresh(position)
-    return _to_position_out(position, _count_questions(db, position.id))
+    return _to_position_out(position, _count_questions(db, position.id), _count_candidates(db, position.id))
 
 
 @router.post("/{position_id}/questions", response_model=QuestionOut, status_code=status.HTTP_201_CREATED)

@@ -92,39 +92,54 @@ export function UserListPage() {
   }
 
   return (
-    <main>
-      <h1>Users</h1>
+    <main className="page">
+      <div className="page-header">
+        <h1>Users</h1>
+        <span className="page-header-count">{users.length} total</span>
+      </div>
       {error && <p role="alert">{error}</p>}
 
       <form onSubmit={handleCreate}>
-        <label htmlFor="new-user-email">Email</label>
-        <input
-          id="new-user-email"
-          type="email"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          required
-        />
-        <label htmlFor="new-user-password">Initial password</label>
-        <input
-          id="new-user-password"
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-        />
-        <label htmlFor="new-user-full-name">Full name</label>
-        <input
-          id="new-user-full-name"
-          value={newFullName}
-          onChange={(e) => setNewFullName(e.target.value)}
-          required
-        />
-        <label htmlFor="new-user-role">Role</label>
-        <select id="new-user-role" value={newRole} onChange={(e) => setNewRole(e.target.value as "admin" | "interviewer")}>
-          <option value="interviewer">Interviewer</option>
-          <option value="admin">Admin</option>
-        </select>
+        <div className="field">
+          <label htmlFor="new-user-email">Email</label>
+          <input
+            id="new-user-email"
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-user-password">Initial password</label>
+          <input
+            id="new-user-password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-user-full-name">Full name</label>
+          <input
+            id="new-user-full-name"
+            value={newFullName}
+            onChange={(e) => setNewFullName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-user-role">Role</label>
+          <select
+            id="new-user-role"
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value as "admin" | "interviewer")}
+          >
+            <option value="interviewer">Interviewer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
         <button type="submit" disabled={creating}>
           {creating ? "Creating…" : "Create user"}
         </button>
@@ -135,7 +150,7 @@ export function UserListPage() {
       ) : users.length === 0 ? (
         <p>No users yet — create one above to get started.</p>
       ) : (
-        <table>
+        <div className="table-scroll"><table>
           <thead>
             <tr>
               <th>Name</th>
@@ -150,38 +165,52 @@ export function UserListPage() {
               <tr key={user.id}>
                 <td>
                   {editingId === user.id ? (
-                    <>
-                      <input value={editingName} onChange={(e) => setEditingName(e.target.value)} />
-                      <button onClick={() => handleSaveName(user.id)}>Save</button>
-                      <button onClick={() => setEditingId(null)}>Cancel</button>
-                    </>
+                    <input value={editingName} onChange={(e) => setEditingName(e.target.value)} autoFocus />
                   ) : (
-                    <>
-                      {user.full_name}{" "}
-                      <button
-                        onClick={() => {
-                          setEditingId(user.id);
-                          setEditingName(user.full_name);
-                        }}
-                      >
-                        Edit
-                      </button>
-                    </>
+                    user.full_name
                   )}
                 </td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
-                <td>{user.is_active ? "Active" : "Deactivated"}</td>
                 <td>
-                  <button onClick={() => handleToggleActive(user)}>
-                    {user.is_active ? "Deactivate" : "Reactivate"}
-                  </button>
-                  <button onClick={() => handleResetPassword(user)}>Reset password</button>
+                  {editingId === user.id ? (
+                    <label className="toggle">
+                      <input
+                        type="checkbox"
+                        checked={user.is_active}
+                        onChange={() => handleToggleActive(user)}
+                      />
+                      <span className="toggle-track" />
+                      <span className="toggle-caption">{user.is_active ? "Active" : "Deactivated"}</span>
+                    </label>
+                  ) : (
+                    <span className={`status-pill ${user.is_active ? "status-active" : "status-inactive"}`}>
+                      {user.is_active ? "Active" : "Deactivated"}
+                    </span>
+                  )}
+                </td>
+                <td className="actions-cell">
+                  {editingId === user.id ? (
+                    <>
+                      <button onClick={() => handleSaveName(user.id)}>Save</button>
+                      <button onClick={() => setEditingId(null)}>Cancel</button>
+                      <button onClick={() => handleResetPassword(user)}>Reset password</button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingId(user.id);
+                        setEditingName(user.full_name);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </main>
   );

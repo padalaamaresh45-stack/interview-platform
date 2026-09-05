@@ -16,21 +16,27 @@ export function InterviewerQueuePage() {
   }, []);
 
   return (
-    <main>
-      <h1>My candidates</h1>
+    <main className="page">
+      <div className="page-header">
+        <h1>My candidates</h1>
+        <span className="page-header-count">{candidates.length} assigned to you</span>
+      </div>
       {error && <p role="alert">{error}</p>}
       {loading ? (
         <p>Loading…</p>
       ) : candidates.length === 0 ? (
-        <p>You have no assigned candidates right now.</p>
+        <p className="detail-meta">You have no assigned candidates right now.</p>
       ) : (
-        <ul>
+        <div className="card-grid">
           {candidates.map((candidate) => (
-            <li key={candidate.id}>
-              <Link to={`/my-candidates/${candidate.id}`}>{candidate.full_name}</Link>
-            </li>
+            <Link key={candidate.id} to={`/my-candidates/${candidate.id}`} className="record-card">
+              <span className="record-card-title">{candidate.full_name}</span>
+              <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
+                {candidate.status === "completed" ? "Scored" : "Awaiting your scorecard"}
+              </span>
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );

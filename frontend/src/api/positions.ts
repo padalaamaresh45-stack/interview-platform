@@ -4,6 +4,7 @@ export interface Position {
   id: number;
   title: string;
   question_count: number;
+  candidate_count: number;
   created_at: string;
   updated_at: string;
 }

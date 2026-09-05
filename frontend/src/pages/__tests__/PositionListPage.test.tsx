@@ -37,7 +37,7 @@ describe("PositionListPage", () => {
 
   it("shows a 0-questions badge for a position with no questions", async () => {
     mockListPositions.mockResolvedValue([
-      { id: 1, title: "Backend Engineer", question_count: 0, created_at: "", updated_at: "" },
+      { id: 1, title: "Backend Engineer", question_count: 0, candidate_count: 0, created_at: "", updated_at: "" },
     ]);
     renderPage();
     expect(await screen.findByText(/0 questions/)).toBeInTheDocument();

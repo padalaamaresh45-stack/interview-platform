@@ -3,6 +3,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { AuthenticatedShell } from "./pages/AuthenticatedShell";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { CalendarPage } from "./pages/CalendarPage";
 import { CandidateDetailPage } from "./pages/CandidateDetailPage";
 import { CandidateListPage } from "./pages/CandidateListPage";
 import { InterviewerQueuePage } from "./pages/InterviewerQueuePage";
@@ -26,6 +27,7 @@ function App() {
             <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
             <Route path="/my-candidates" element={<InterviewerQueuePage />} />
             <Route path="/my-candidates/:candidateId" element={<InterviewerScorecardPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

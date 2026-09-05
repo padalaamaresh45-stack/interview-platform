@@ -1,96 +1,106 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  /* Modern Clay: neutral cream canvas + near-black ink text, system font
+     stack, soft diffused elevation instead of hard "sticker" shadows.
+     Bright accent color is reserved for semantic signals (health) and the
+     primary call-to-action — never decoration. */
+  --text: #57534e;
+  --text-muted: #8a8378;
+  --text-h: #0a0a0a;
+  /* Lighter, closer-to-white canvas than the earlier cream pass — clean
+     reads better at scale than warm. Still not sterile pure white. */
+  --bg: #fdfcfa;
+  --surface: #ffffff;
+  --border: #e7e4de;
+  --code-bg: #f4f2ee;
   --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Primary actions and links are monochrome ink — the whole palette is
+     black/white/gray plus one semantic red/coral for the stalled health
+     state (see --health-stalled below). Nothing else carries color. */
+  --cta-bg: var(--text-h);
+  --cta-hover: #262626;
+  --on-cta: #fff;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Soft, diffused elevation — cards lift gently on hover rather than
+     jumping with a hard offset shadow. */
+  --shadow-xs: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-sm: 0 1px 3px rgba(10, 10, 10, 0.05), 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-md: 0 4px 16px rgba(10, 10, 10, 0.06), 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-lg: 0 16px 32px rgba(10, 10, 10, 0.1), 0 2px 8px rgba(10, 10, 10, 0.06);
+
+  --sans:
+    'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --heading: var(--sans);
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
+  font: 15px/1.55 var(--sans);
+  letter-spacing: 0;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  text-align: left;
 }
 
+/* ---------- Type scale ----------
+   One documented scale, used everywhere — this is the whole point: a page
+   title is always 26px/800, a section title is always 17px/700, a
+   micro-label is always 11px/700/uppercase. Nothing outside this file
+   invents its own one-off size. Two intentional overrides exist for denser
+   contexts (.board-header h1 at 22px for the board, .pipeline-card at
+   13.5px base) — every other size below is deliberate, not accidental.
+
+     26px / 800  — h1, page title
+     22px / 800  — h1 inside .board-header (denser context)
+     17px / 700  — h2, section title
+     14px / 700  — h3, rarely used sub-label
+     15px / 600  — .stat-value (an emphasized single data point)
+     13.5px/ 400 — default body copy, table cells, card text
+     13px  / 600 — buttons (all variants)
+     12.5px/ 500 — secondary/meta text: form labels, timestamps, captions
+     11px  / 700 — uppercase eyebrow micro-labels: table headers, stat labels
+     10px  / 700 — compact status pills (health, active/inactive) — the one
+                   tier smaller than the eyebrow label, reserved for badges */
+
 h1,
-h2 {
+h2,
+h3 {
   font-family: var(--heading);
-  font-weight: 500;
   color: var(--text-h);
+  margin: 0;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
+
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
+
+h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 p {
   margin: 0;
 }
@@ -104,8 +114,1181 @@ code,
 }
 
 code {
-  font-size: 15px;
+  font-size: 13px;
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* ---------- App shell: icon nav rail + main canvas ---------- */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--board-bg);
+}
+
+.nav-rail {
+  flex: 0 0 60px;
+  background: var(--text-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.nav-rail-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-rail-item {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--bg);
+  opacity: 0.55;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-rail-item:hover {
+  opacity: 1;
+  background: rgba(255, 250, 240, 0.1);
+}
+
+.nav-rail-item.active {
+  background: var(--bg);
+  color: var(--text-h);
+  opacity: 1;
+}
+
+.nav-rail-user {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+}
+
+@media (max-width: 720px) {
+  .app-main {
+    padding: 16px;
+  }
+}
+
+/* ---------- Pipeline board ---------- */
+
+:root {
+  --board-bg: var(--bg);
+  /* on-track deliberately uses the neutral border token, not a saturated
+     color: most candidates are on-track at any given time, so a saturated
+     "good" color on every card would camouflage the exception (stalled)
+     that actually needs attention. Saturation is reserved for what's wrong. */
+  --health-on-track: var(--border);
+  --health-stalled: #e0562f;
+}
+
+.board-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.board-header h1 {
+  font-size: 22px;
+}
+
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.board-toolbar-spacer {
+  flex: 1;
+}
+
+.btn-primary {
+  background: var(--cta-bg);
+  color: var(--on-cta);
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--cta-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  box-shadow: var(--shadow-xs);
+}
+
+.pipeline-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+
+.pipeline-column {
+  flex: 0 0 248px;
+  min-height: 60px;
+}
+
+.pipeline-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  padding: 4px 4px 12px;
+}
+
+.pipeline-column-header .muted {
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.pipeline-column-empty {
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+  padding: 16px 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* A terminal stage (Hired/Rejected) only ever grows — collapsed to a
+   count chip by default so it can't crowd out the in-flight stages that
+   actually need daily attention. */
+.pipeline-column-collapsed {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.pipeline-column-collapsed:hover {
+  border-color: var(--text-muted);
+}
+
+.pipeline-column-collapse-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 6px;
+}
+
+.pipeline-column-collapse-toggle:hover {
+  color: var(--text-h);
+}
+
+.pipeline-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--health-on-track);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  cursor: grab;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pipeline-card:hover {
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.pipeline-card.health-stalled {
+  border-left-color: var(--health-stalled);
+}
+
+.pipeline-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* One neutral, consistent avatar treatment across every card — color here
+   carries no data meaning, so a rotating palette just competes with the
+   health signal. The accent palette stays reserved for things that mean
+   something: health (teal/coral) and brand actions (pink CTA). */
+.pipeline-card-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--text-h);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.pipeline-card-days {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.pipeline-card-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+.health-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.health-pill.on_track {
+  color: var(--text-muted);
+  background: var(--code-bg);
+}
+
+.health-pill.stalled {
+  color: var(--health-stalled);
+  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+}
+
+.pipeline-card-next-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.danger {
+  color: var(--health-stalled);
+}
+
+/* ---------- Shared page chrome ----------
+   Every non-board page (Positions, Users, Candidates, Login, ...) renders
+   plain semantic HTML — <main>, <table>, <form>, <input>, <button>, <a> —
+   with no component classes of its own. Rather than retrofit each page's
+   JSX with card/table/input classNames one by one, style those bare
+   elements once, scoped under .page (added to each page's outer <main>).
+   HomePage's board keeps its own full-width layout and is deliberately
+   NOT wrapped in .page. */
+
+.page {
+  /* Fluid, not fixed: fills available width up to a generous cap instead of
+     stranding a fixed 980px column in a sea of empty canvas on wide
+     viewports (the complaint this replaces). Padding scales down on narrow
+     screens via the media query below. */
+  width: min(1320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 32px 40px 56px;
+  box-sizing: border-box;
+}
+
+/* ---------- Login ----------
+   A single small form pinned top-left of a full-height page (the old
+   LoginPage, which reused .page) left the entire rest of the viewport as
+   dead cream space below a hairline divider. A login screen is exactly one
+   thing — center that one thing, both axes, in its own card instead of
+   trying to fit it into the "content-following" .page layout every other
+   screen uses. */
+.login-shell {
+  min-height: 100svh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.login-card h1 {
+  font-size: 20px;
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.login-card form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login-card form label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.login-card form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.login-card form button {
+  align-self: stretch;
+  justify-content: center;
+  background: var(--cta-bg);
+  color: var(--on-cta);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.login-card form button:hover {
+  background: var(--cta-hover);
+}
+
+.login-card form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 16px 32px;
+    gap: 20px;
+  }
+}
+
+.page h2 {
+  margin-top: 8px;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header-count {
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.page > p[role="alert"] {
+  background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
+  color: var(--health-stalled);
+  border: 1px solid color-mix(in srgb, var(--health-stalled) 25%, transparent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.page a {
+  color: var(--text-h);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1.5px solid var(--border);
+  padding-bottom: 1px;
+  transition: border-color 0.15s ease;
+}
+
+.page a:hover {
+  border-color: var(--text-h);
+}
+
+/* Shared grouped-box look: a bordered, tinted panel that gives a cluster of
+   related controls one visible edge instead of floating loose on the page
+   background — this is what fixed "boxes are here and there" for the
+   create-record toolbars. Any related content that belongs with a form
+   (e.g. a stat row above a "move to stage" form) should share the SAME
+   panel rather than getting its own separately-boxed one stacked below it
+   — two boxes in a row for one logical group is the "not in sync" bug this
+   is meant to prevent going forward. */
+.panel {
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--code-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--code-bg);
+}
+
+/* A form already inside a .panel (grouped with sibling content like a stat
+   row) must not draw a second nested box — that's the exact "boxes here
+   and there" / "not in sync" look this whole panel system exists to kill. */
+.panel form {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* A destructive action (Delete candidate) used to sit as its own orphan
+   pill floating below the Details box — now it lives inside the same
+   panel, set off by its own hairline so it still reads as a distinct,
+   deliberate zone rather than just another form field. */
+.panel-danger-zone {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* A label and its control must wrap together as one unit — label directly
+   above input, never beside it. Loose label/input siblings in a flex-wrap
+   row can land on different lines when the row wraps (the "Interviewer"
+   label stranded at the end of one line, its <select> starting the next),
+   which is exactly the label-detached-from-control bug this fixes. */
+.page form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.page form label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* flex-basis: 100% forces this onto its own row within the form's
+   flex-wrap layout, below the aligned field row — nesting a hint inside
+   one .field instead made that field taller than its siblings and threw
+   off the row's flex-end alignment (the "header disconnected" bug). */
+.field-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.page form > button {
+  align-self: flex-end;
+}
+
+.page input,
+.page select,
+.page textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 13.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.page input:focus,
+.page select:focus,
+.page textarea:focus {
+  outline: none;
+  border-color: var(--text-h);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-h) 8%, transparent);
+}
+
+.page input:disabled,
+.page select:disabled {
+  opacity: 0.6;
+}
+
+.page button[type="submit"] {
+  background: var(--cta-bg);
+  color: var(--on-cta);
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.page button[type="submit"]:hover {
+  background: var(--cta-hover);
+  transform: translateY(-1px);
+}
+
+.page button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page button:not([type="submit"]) {
+  background: var(--surface);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page button:not([type="submit"]):hover {
+  border-color: var(--text-h);
+}
+
+.page td button:not([type="submit"]) {
+  margin-right: 6px;
+}
+
+/* Only the table scrolls horizontally on narrow viewports — never the whole
+   page (nav rail, header) along with it. min-width: 0 is load-bearing here:
+   .page is a flex column, and a flex item's default min-width is auto (its
+   content size), which lets it push the whole page wider instead of
+   shrinking and triggering its own overflow-x. */
+.table-scroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/* Rows render as individual rounded cards ("pill rows") rather than a flat
+   ruled table — each <tr> reads as its own boxed unit, matching the
+   card/pill language used everywhere else, while staying a real <table> so
+   columns still align. border-spacing (not margin) creates the gap between
+   rows; the rounded rect per row comes from radius on the first/last <td>
+   plus a matching border on every <td> in between. */
+.page table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.page thead tr {
+  background: none;
+}
+
+.page th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 16px 8px;
+}
+
+.page td {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  font-size: 13.5px;
+  vertical-align: middle;
+}
+
+.page td:first-child {
+  border-left: 1px solid var(--border);
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.page td:last-child {
+  border-right: 1px solid var(--border);
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.page tbody tr:hover td {
+  background: var(--code-bg);
+}
+
+/* ---------- Detail page sections ----------
+   A record page (candidate detail, etc.) reads as a sequence of sections —
+   header, edit form, pipeline, history — separated by whitespace and a
+   single hairline rule rather than each being boxed. .page's own flex gap
+   provides the vertical rhythm; this just draws the divider between
+   consecutive sections and skips it before the first. */
+
+.page > section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+  margin-top: -4px;
+}
+
+.detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-meta {
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+/* ---------- Stage progress ----------
+   A step tracker across the position's real stages, so "how far along is
+   this candidate" is answerable at a glance instead of only from the text
+   stat below it. Steps are read left-to-right in the same order stages
+   appear in the "Move to stage" select. */
+.stage-progress {
+  display: flex;
+  align-items: flex-start;
+}
+
+.stage-progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.stage-progress-line {
+  flex: 1 1 auto;
+  height: 2px;
+  min-width: 16px;
+  margin-top: 8px;
+  background: var(--border);
+}
+
+.stage-progress-line.done {
+  background: var(--text-h);
+}
+
+.stage-progress-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  box-sizing: border-box;
+}
+
+.stage-progress-step.done .stage-progress-dot {
+  background: var(--text-h);
+  border-color: var(--text-h);
+}
+
+.stage-progress-step.current .stage-progress-dot {
+  border-color: var(--text-h);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-h) 15%, transparent);
+}
+
+.stage-progress-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.stage-progress-step.current .stage-progress-label {
+  color: var(--text-h);
+}
+
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* A question row (PositionDetailPage) pairs its text with row actions —
+   space them apart explicitly instead of letting them run together inline,
+   which is what produced the cramped "text[Edit][Delete]" look. */
+.history-list li.question-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.history-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.history-list .history-when {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+/* ---------- Status pills ----------
+   One small badge component for any two/three-state status text (user
+   active/deactivated, candidate not_started/completed) — text alone was
+   easy to miss scanning a dense column; a pill gives it a fixed visual
+   weight regardless of the word's length. Neutral by default; only a
+   genuinely negative state (deactivated) gets the red tint, matching the
+   rule that red means "needs attention" everywhere else in the app. */
+.status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  color: var(--text-muted);
+}
+
+.status-pill.status-active {
+  color: var(--text-muted);
+}
+
+.status-pill.status-inactive {
+  color: var(--health-stalled);
+  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+}
+
+/* ---------- Row actions ----------
+   Every row action (Edit, Deactivate, Reset password, ...) lives together
+   in one Actions cell instead of one button sitting inline next to the
+   name it edits — the name column stays pure data. */
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Destructive action ----------
+   A delete/remove action is a distinct kind of button from both the
+   primary CTA (ink) and a neutral secondary action — red signals "this is
+   not reversible," same visual language health uses for "needs attention." */
+/* button.btn-danger (not just .btn-danger): needs to match or beat the
+   specificity of .page button:not([type="submit"]) above, or the generic
+   secondary-button styling silently wins and the color never applies. */
+.page button.btn-danger {
+  background: var(--surface);
+  color: var(--health-stalled);
+  border: 1px solid color-mix(in srgb, var(--health-stalled) 40%, transparent);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.page button.btn-danger:hover {
+  background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
+  border-color: var(--health-stalled);
+}
+
+/* ---------- Card grid ----------
+   For a page listing few, simple records (Positions: a title + a count) —
+   a card grid reads cleaner than a table with only two sparse columns.
+   Dense multi-column data (Users, Candidates) keeps the table, where
+   column alignment genuinely helps scanning. */
+/* auto-fill + a capped (not 1fr) max keeps cards a fixed, content-sized
+   width — with 1fr, a wide viewport stretched every short "name + one
+   pill" card into an oversized box with the pill stranded far from the
+   name it describes. Left-over row space is now a gap, not a stretch. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
+  gap: 14px;
+}
+
+.record-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.record-card:hover {
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Positions render their record-card as a <Link>, which .page a would
+   otherwise underline like an inline text link — override that here since
+   the whole card is the click target, not a piece of running text. */
+.page a.record-card {
+  border-bottom: none;
+  padding-bottom: 0;
+  text-decoration: none;
+  font-weight: normal;
+}
+
+.page a.record-card:hover {
+  color: inherit;
+}
+
+.record-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.record-card-meta {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* The calendar's candidate link renders as <a class="record-card-meta"> so
+   it stays clickable/keyboard-navigable — override .page a's link styling
+   (bold, underlined) so it still reads as quiet meta text, not a headline
+   link, matching every other .record-card-meta line beside it. */
+.page a.record-card-meta {
+  border-bottom: none;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.page a.record-card-meta:hover {
+  color: var(--text-h);
+}
+
+.record-card > .status-pill,
+.record-card > .btn-danger,
+.record-card > .btn-secondary {
+  align-self: flex-start;
+}
+
+/* The scorecard-submission question list (InterviewerScorecardPage) is a
+   plain <ol> inside a <form> — style it as a stack of quiet cards instead
+   of a raw numbered list, consistent with every other grouped-content
+   pattern in the app. */
+.page form ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-basis: 100%;
+}
+
+.page form ol li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.page form ol li > p {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+/* ---------- Toggle switch ----------
+   Real on/off switch (not a button pretending to be one) for binary state
+   that's edited in place — e.g. a user's active/deactivated state while
+   their row is in edit mode. Built on a native checkbox for free keyboard
+   and screen-reader support; the checkbox itself is visually hidden and
+   the track/thumb are drawn from its :checked state. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color 0.15s ease;
+  flex: 0 0 auto;
+}
+
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.15s ease;
+}
+
+.toggle input:checked + .toggle-track {
+  background: var(--text-h);
+}
+
+.toggle input:checked + .toggle-track::after {
+  transform: translateX(14px);
+}
+
+.toggle input:focus-visible + .toggle-track {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-h) 15%, transparent);
+}
+
+.toggle-caption {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ---------- Calendar month grid ---------- */
+
+.calendar-month-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-month-header h2 {
+  min-width: 160px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding-bottom: 8px;
+}
+
+/* .page button.calendar-day (not just .calendar-day): a day cell is a real
+   <button>, so it also matches .page button:not([type="submit"]) — a
+   higher-specificity rule that was silently winning and turning every
+   square day cell into a pill-shaped circle. Same fix as .btn-danger above. */
+.page button.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.page button.calendar-day:hover {
+  border-color: var(--text-muted);
+}
+
+.calendar-day-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.calendar-day-outside .calendar-day-number {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.page button.calendar-day-today {
+  border-color: var(--text-h);
+  border-width: 2px;
+}
+
+.page button.calendar-day-selected {
+  background: var(--text-h);
+}
+
+.calendar-day-selected .calendar-day-number {
+  color: var(--on-cta);
+}
+
+/* Ink, not red — a scheduled-interview count isn't a danger signal, and red
+   is reserved for that everywhere else in this app (stalled health). */
+.calendar-day-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--on-cta);
+  background: var(--text-h);
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.calendar-day-selected .calendar-day-count {
+  background: var(--surface);
+  color: var(--text-h);
 }

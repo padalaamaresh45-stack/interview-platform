@@ -32,6 +32,7 @@ describe("PositionDetailPage", () => {
       id: POSITION_ID,
       title: "Backend Engineer",
       question_count: 0,
+      candidate_count: 0,
       created_at: "",
       updated_at: "",
     });
@@ -47,6 +48,7 @@ describe("PositionDetailPage", () => {
       id: POSITION_ID,
       title: "Backend Engineer",
       question_count: 2,
+      candidate_count: 0,
       created_at: "",
       updated_at: "",
     });

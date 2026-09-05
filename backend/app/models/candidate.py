@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, event, func, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -30,4 +30,37 @@ class Candidate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+@event.listens_for(Candidate, "after_insert")
+def _seed_initial_stage_transition(mapper, connection, candidate: "Candidate") -> None:
+    """Every Candidate must enter the pipeline at its position's first stage the
+    moment it exists — see the matching Position.after_insert event for why this
+    lives at the model layer instead of only in the admin router: a candidate
+    created any other way (a test fixture, a future script) still needs a current
+    stage, or it silently drops off the board and the candidate page can't render
+    a history."""
+    from app.models.stage import Stage
+    from app.models.stage_transition import CandidateStageTransition
+
+    first_stage_id = connection.execute(
+        select(Stage.id)
+        .where(Stage.position_id == candidate.position_id)
+        .order_by(Stage.sequence_order)
+        .limit(1)
+    ).scalar()
+    if first_stage_id is None:
+        return
+
+    connection.execute(
+        CandidateStageTransition.__table__.insert(),
+        [
+            {
+                "candidate_id": candidate.id,
+                "from_stage_id": None,
+                "to_stage_id": first_stage_id,
+                "actor_id": candidate.created_by,
+            }
+        ],
     )

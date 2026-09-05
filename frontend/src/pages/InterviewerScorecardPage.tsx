@@ -91,7 +91,7 @@ export function InterviewerScorecardPage() {
 
   if (candidate === null) {
     return (
-      <main>
+      <main className="page">
         {error ? <p role="alert">{error}</p> : <p>Loading…</p>}
       </main>
     );
@@ -99,7 +99,7 @@ export function InterviewerScorecardPage() {
 
   if (candidate.status === "completed") {
     return (
-      <main>
+      <main className="page">
         <p>
           <Link to="/my-candidates">← Back to my candidates</Link>
         </p>
@@ -126,7 +126,7 @@ export function InterviewerScorecardPage() {
   });
 
   return (
-    <main>
+    <main className="page">
       <p>
         <Link to="/my-candidates">← Back to my candidates</Link>
       </p>
@@ -138,22 +138,26 @@ export function InterviewerScorecardPage() {
           {candidate.questions.map((q) => (
             <li key={q.id}>
               <p>{q.question_text}</p>
-              <label htmlFor={`score-${q.id}`}>Score (1-5)</label>
-              <input
-                id={`score-${q.id}`}
-                type="number"
-                min={1}
-                max={5}
-                value={draft[q.id]?.score ?? ""}
-                onChange={(e) => updateField(q.id, "score", e.target.value)}
-                required
-              />
-              <label htmlFor={`comment-${q.id}`}>Comment (optional)</label>
-              <textarea
-                id={`comment-${q.id}`}
-                value={draft[q.id]?.comment ?? ""}
-                onChange={(e) => updateField(q.id, "comment", e.target.value)}
-              />
+              <div className="field">
+                <label htmlFor={`score-${q.id}`}>Score (1-5)</label>
+                <input
+                  id={`score-${q.id}`}
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={draft[q.id]?.score ?? ""}
+                  onChange={(e) => updateField(q.id, "score", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor={`comment-${q.id}`}>Comment (optional)</label>
+                <textarea
+                  id={`comment-${q.id}`}
+                  value={draft[q.id]?.comment ?? ""}
+                  onChange={(e) => updateField(q.id, "comment", e.target.value)}
+                />
+              </div>
             </li>
           ))}
         </ol>

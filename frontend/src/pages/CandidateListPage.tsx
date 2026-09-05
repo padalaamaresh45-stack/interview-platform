@@ -74,49 +74,67 @@ export function CandidateListPage() {
   };
 
   return (
-    <main>
-      <h1>Candidates</h1>
+    <main className="page">
+      <div className="page-header">
+        <h1>Candidates</h1>
+        <span className="page-header-count">{candidates.length} total</span>
+      </div>
       {error && <p role="alert">{error}</p>}
 
       <form onSubmit={handleCreate}>
-        <label htmlFor="new-candidate-name">Full name</label>
-        <input id="new-candidate-name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
-        <label htmlFor="new-candidate-email">Email (optional)</label>
-        <input id="new-candidate-email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-        <label htmlFor="new-candidate-phone">Phone (optional)</label>
-        <input id="new-candidate-phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
-        <label htmlFor="new-candidate-position">Position</label>
-        <select
-          id="new-candidate-position"
-          value={newPositionId}
-          onChange={(e) => setNewPositionId(e.target.value)}
-          required
-        >
-          <option value="" disabled>
-            Select a position
-          </option>
-          {positions.map((position) => (
-            <option key={position.id} value={position.id}>
-              {position.title} ({position.question_count} questions)
+        <div className="field">
+          <label htmlFor="new-candidate-name">Full name</label>
+          <input id="new-candidate-name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
+        </div>
+        <div className="field">
+          <label htmlFor="new-candidate-email">Email (optional)</label>
+          <input
+            id="new-candidate-email"
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-candidate-phone">Phone (optional)</label>
+          <input id="new-candidate-phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="new-candidate-position">Position</label>
+          <select
+            id="new-candidate-position"
+            value={newPositionId}
+            onChange={(e) => setNewPositionId(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              Select a position
             </option>
-          ))}
-        </select>
-        <label htmlFor="new-candidate-interviewer">Interviewer</label>
-        <select
-          id="new-candidate-interviewer"
-          value={newInterviewerId}
-          onChange={(e) => setNewInterviewerId(e.target.value)}
-          required
-        >
-          <option value="" disabled>
-            Select an interviewer
-          </option>
-          {interviewers.map((interviewer) => (
-            <option key={interviewer.id} value={interviewer.id}>
-              {interviewer.full_name}
+            {positions.map((position) => (
+              <option key={position.id} value={position.id}>
+                {position.title} ({position.question_count} questions)
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="new-candidate-interviewer">Interviewer</label>
+          <select
+            id="new-candidate-interviewer"
+            value={newInterviewerId}
+            onChange={(e) => setNewInterviewerId(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              Select an interviewer
             </option>
-          ))}
-        </select>
+            {interviewers.map((interviewer) => (
+              <option key={interviewer.id} value={interviewer.id}>
+                {interviewer.full_name}
+              </option>
+            ))}
+          </select>
+        </div>
         <button type="submit" disabled={creating}>
           {creating ? "Creating…" : "Create candidate"}
         </button>
@@ -127,7 +145,7 @@ export function CandidateListPage() {
       ) : candidates.length === 0 ? (
         <p>No candidates yet — create one above to get started.</p>
       ) : (
-        <table>
+        <div className="table-scroll"><table>
           <thead>
             <tr>
               <th>Name</th>
@@ -144,11 +162,17 @@ export function CandidateListPage() {
                 </td>
                 <td>{positionTitle(candidate.position_id)}</td>
                 <td>{interviewerName(candidate.interviewer_id)}</td>
-                <td>{candidate.status}</td>
+                <td>
+                  <span
+                    className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}
+                  >
+                    {candidate.status === "completed" ? "Completed" : "Not started"}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </main>
   );

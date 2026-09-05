@@ -50,7 +50,7 @@ describe("CandidateDetailPage", () => {
   it("keeps a since-deactivated assigned interviewer visibly selected instead of silently falling back to a different option", async () => {
     mockGetCandidate.mockResolvedValue(candidate);
     mockListPositions.mockResolvedValue([
-      { id: 1, title: "Backend Engineer", question_count: 1, created_at: "", updated_at: "" },
+      { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
     ]);
     mockListUsers.mockResolvedValue([
       {
@@ -93,7 +93,7 @@ describe("CandidateDetailPage", () => {
   it("disables deactivated interviewers as reassignment choices but keeps them selectable if already current", async () => {
     mockGetCandidate.mockResolvedValue(candidate);
     mockListPositions.mockResolvedValue([
-      { id: 1, title: "Backend Engineer", question_count: 1, created_at: "", updated_at: "" },
+      { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
     ]);
     mockListUsers.mockResolvedValue([
       {

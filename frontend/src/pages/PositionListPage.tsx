@@ -40,18 +40,23 @@ export function PositionListPage() {
   }
 
   return (
-    <main>
-      <h1>Positions</h1>
+    <main className="page">
+      <div className="page-header">
+        <h1>Positions</h1>
+        <span className="page-header-count">{positions.length} total</span>
+      </div>
       {error && <p role="alert">{error}</p>}
 
       <form onSubmit={handleCreate}>
-        <label htmlFor="new-position-title">New position title</label>
-        <input
-          id="new-position-title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          required
-        />
+        <div className="field">
+          <label htmlFor="new-position-title">New position title</label>
+          <input
+            id="new-position-title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            required
+          />
+        </div>
         <button type="submit" disabled={creating}>
           {creating ? "Creating…" : "Create position"}
         </button>
@@ -62,27 +67,16 @@ export function PositionListPage() {
       ) : positions.length === 0 ? (
         <p>No positions yet — create one above to get started.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Questions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {positions.map((position) => (
-              <tr key={position.id}>
-                <td>
-                  <Link to={`/positions/${position.id}`}>{position.title}</Link>
-                </td>
-                <td>
-                  {position.question_count}
-                  {position.question_count === 0 && <span> — 0 questions</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card-grid">
+          {positions.map((position) => (
+            <Link key={position.id} to={`/positions/${position.id}`} className="record-card">
+              <span className="record-card-title">{position.title}</span>
+              <span className="record-card-meta">
+                {position.question_count} question{position.question_count === 1 ? "" : "s"}
+              </span>
+            </Link>
+          ))}
+        </div>
       )}
     </main>
   );

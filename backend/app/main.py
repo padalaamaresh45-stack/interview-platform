@@ -2,7 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import admin_candidates, admin_positions, admin_questions, admin_users, auth, health, interviewer
+from app.routers import (
+    admin_candidates,
+    admin_positions,
+    admin_questions,
+    admin_users,
+    auth,
+    health,
+    interviewer,
+    interviews,
+    pipeline,
+)
 
 app = FastAPI(title="Interview Management Portal API")
 
@@ -22,3 +32,5 @@ app.include_router(admin_questions.router)
 app.include_router(admin_candidates.router)
 app.include_router(admin_candidates.interviewers_router)
 app.include_router(interviewer.router)
+app.include_router(pipeline.router)
+app.include_router(interviews.router)

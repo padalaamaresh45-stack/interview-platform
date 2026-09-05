@@ -15,6 +15,7 @@ class PositionOut(BaseModel):
     id: int
     title: str
     question_count: int
+    candidate_count: int
     created_at: datetime
     updated_at: datetime
 

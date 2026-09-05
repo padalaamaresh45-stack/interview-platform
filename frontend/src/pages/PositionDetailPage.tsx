@@ -91,83 +91,111 @@ export function PositionDetailPage() {
 
   if (position === null) {
     return (
-      <main>
+      <main className="page">
         {error ? <p role="alert">{error}</p> : <p>Loading…</p>}
       </main>
     );
   }
 
   return (
-    <main>
+    <main className="page">
       <p>
         <Link to="/positions">← Back to positions</Link>
       </p>
       {error && <p role="alert">{error}</p>}
 
-      {editingTitle ? (
-        <form onSubmit={handleTitleSave}>
-          <input value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} required />
-          <button type="submit">Save</button>
-          <button type="button" onClick={() => setEditingTitle(false)}>
-            Cancel
-          </button>
+      <section className="detail-header">
+        {editingTitle ? (
+          <form onSubmit={handleTitleSave}>
+            <div className="field">
+              <label htmlFor="position-title">Title</label>
+              <input
+                id="position-title"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit">Save</button>
+            <button type="button" onClick={() => setEditingTitle(false)}>
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <div className="page-header">
+            <h1>{position.title}</h1>
+            <button onClick={() => setEditingTitle(true)}>Edit</button>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2>Questions{questions.length === 0 && " — 0 questions"}</h2>
+        {questions.length > 0 && (
+          <ul className="history-list">
+            {questions.map((question) => (
+              <li key={question.id} className="question-row">
+                {editingQuestionId === question.id ? (
+                  <>
+                    <input
+                      value={editingQuestionText}
+                      onChange={(e) => setEditingQuestionText(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="actions-cell">
+                      <button onClick={() => handleSaveQuestion(question.id)}>Save</button>
+                      <button onClick={() => setEditingQuestionId(null)}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {question.sequence_order}. {question.question_text}
+                    </span>
+                    <div className="actions-cell">
+                      <button
+                        onClick={() => {
+                          setEditingQuestionId(question.id);
+                          setEditingQuestionText(question.question_text);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button className="btn-danger" onClick={() => handleDeleteQuestion(question.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form onSubmit={handleAddQuestion}>
+          <div className="field">
+            <label htmlFor="new-question-text">Question text</label>
+            <input
+              id="new-question-text"
+              value={newQuestionText}
+              onChange={(e) => setNewQuestionText(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="new-question-order">Sequence order</label>
+            <input
+              id="new-question-order"
+              type="number"
+              min={0}
+              value={newQuestionOrder}
+              onChange={(e) => setNewQuestionOrder(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit">Add question</button>
         </form>
-      ) : (
-        <h1>
-          {position.title} <button onClick={() => setEditingTitle(true)}>Edit</button>
-        </h1>
-      )}
-
-      <h2>Questions {questions.length === 0 && "— 0 questions"}</h2>
-      <ol>
-        {questions.map((question) => (
-          <li key={question.id}>
-            {editingQuestionId === question.id ? (
-              <>
-                <input
-                  value={editingQuestionText}
-                  onChange={(e) => setEditingQuestionText(e.target.value)}
-                />
-                <button onClick={() => handleSaveQuestion(question.id)}>Save</button>
-                <button onClick={() => setEditingQuestionId(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                {question.question_text}
-                <button
-                  onClick={() => {
-                    setEditingQuestionId(question.id);
-                    setEditingQuestionText(question.question_text);
-                  }}
-                >
-                  Edit
-                </button>
-                <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
-              </>
-            )}
-          </li>
-        ))}
-      </ol>
-
-      <form onSubmit={handleAddQuestion}>
-        <label htmlFor="new-question-text">Question text</label>
-        <input
-          id="new-question-text"
-          value={newQuestionText}
-          onChange={(e) => setNewQuestionText(e.target.value)}
-          required
-        />
-        <label htmlFor="new-question-order">Sequence order</label>
-        <input
-          id="new-question-order"
-          type="number"
-          min={0}
-          value={newQuestionOrder}
-          onChange={(e) => setNewQuestionOrder(e.target.value)}
-          required
-        />
-        <button type="submit">Add question</button>
-      </form>
+      </section>
     </main>
   );
 }
