@@ -21,6 +21,7 @@ from app.pipeline.derive import (
     derive_candidate_fields,
     is_split_decision,
 )
+from app.pipeline.stage_transitions import latest_transitions_by_candidate, record_stage_transition
 from app.schemas.pipeline import (
     BoardCandidateOut,
     BoardColumnOut,
@@ -42,26 +43,6 @@ def _get_candidate_or_404(db: DBSession, candidate_id: int) -> Candidate:
     if candidate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found.")
     return candidate
-
-
-def _latest_transitions_by_candidate(
-    db: DBSession, candidate_ids: list[int]
-) -> dict[int, CandidateStageTransition]:
-    """The single query every caller uses to find each candidate's current stage.
-    A candidate's current stage is the to_stage of its most recent transition —
-    never a stored current_stage column."""
-    if not candidate_ids:
-        return {}
-    rows = (
-        db.query(CandidateStageTransition)
-        .filter(CandidateStageTransition.candidate_id.in_(candidate_ids))
-        .order_by(CandidateStageTransition.candidate_id, CandidateStageTransition.created_at.desc(), CandidateStageTransition.id.desc())
-        .all()
-    )
-    latest: dict[int, CandidateStageTransition] = {}
-    for row in rows:
-        latest.setdefault(row.candidate_id, row)
-    return latest
 
 
 def _question_counts_by_position(db: DBSession, position_ids: list[int]) -> dict[int, int]:
@@ -159,7 +140,7 @@ def get_board(
     candidates = candidate_query.all()
 
     positions = {p.id: p for p in db.query(Position).all()}
-    latest_transitions = _latest_transitions_by_candidate(db, [c.id for c in candidates])
+    latest_transitions = latest_transitions_by_candidate(db, [c.id for c in candidates])
     question_counts = _question_counts_by_position(db, list(positions.keys()))
     scores_by_candidate = _scores_by_candidate(db, [c.id for c in candidates])
     open_rounds = get_open_rounds(db, [c.id for c in candidates])
@@ -399,7 +380,7 @@ def move_candidate(
             detail="to_stage_id must reference a stage belonging to the candidate's position.",
         )
 
-    latest = _latest_transitions_by_candidate(db, [candidate.id]).get(candidate.id)
+    latest = latest_transitions_by_candidate(db, [candidate.id]).get(candidate.id)
     from_stage_id = latest.to_stage_id if latest else None
 
     if from_stage_id == to_stage.id:
@@ -431,14 +412,7 @@ def move_candidate(
                     ),
                 )
 
-    db.add(
-        CandidateStageTransition(
-            candidate_id=candidate.id,
-            from_stage_id=from_stage_id,
-            to_stage_id=to_stage.id,
-            actor_id=admin.id,
-        )
-    )
+    record_stage_transition(db, candidate, to_stage, admin.id)
     db.commit()
     db.refresh(candidate)
     return _build_candidate_history(db, candidate)

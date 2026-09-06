@@ -10,6 +10,7 @@ from app.models.stage import Stage
 from app.models.user import User, UserRole
 from app.pipeline.access import get_open_round
 from app.pipeline.rounds import close_and_open_round
+from app.pipeline.stage_transitions import record_stage_transition
 from app.schemas.round import ReassignRequest, RoundAssignRequest, RoundOut
 
 router = APIRouter(prefix="/api/admin", tags=["rounds"])
@@ -50,8 +51,13 @@ def assign_round(
 ):
     """Assign a candidate's next Round and, if scheduling fields were
     supplied, its Interview — one atomic write (ticket #28). Closing any
-    still-open prior round is #27's shared helper; this endpoint only adds
-    the optional Interview on top, inside the same transaction."""
+    still-open prior round is #27's shared helper; this endpoint also records
+    the matching CandidateStageTransition in the same transaction, so the
+    pipeline board's stage column and the round's actual stage can't drift
+    apart the way they could before (the board is #16's machinery, the round
+    is #27's — record_stage_transition is the one shared write between them,
+    same convention as close_and_open_round). The optional Interview is added
+    on top, still inside the same transaction."""
     candidate = db.get(Candidate, candidate_id)
     if candidate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found.")
@@ -73,6 +79,7 @@ def assign_round(
         assignment_due_at=payload.assignment_due_at,
         brief=payload.brief,
     )
+    record_stage_transition(db, candidate, stage, admin.id)
 
     interview = None
     if payload.scheduled_at is not None:
