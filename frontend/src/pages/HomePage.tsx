@@ -144,13 +144,14 @@ function PipelineBoard() {
     (sum, c) => sum + c.candidates.filter((cand) => cand.health === "stalled").length,
     0,
   );
+  const currentPosition = positions.find((p) => String(p.id) === positionFilter);
 
   return (
     <main>
       <div className="board-header">
         <h1>Candidate pipeline</h1>
         <span className="muted">
-          {totalCandidates} candidates · {stalledCount} stalled
+          {totalCandidates} candidates{currentPosition ? ` — ${currentPosition.title}` : ""} · {stalledCount} stalled
         </span>
       </div>
 
