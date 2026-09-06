@@ -40,6 +40,14 @@ _KNOWN_INTERVIEWER_ROUTES = {
 _SENSITIVE_COMMENT = "Not a fit."
 
 
+# Deliberately walks FastAPI's internal Dependant tree (route.dependant, its
+# .dependencies, recursively) rather than a hand-maintained route list — that's
+# what lets the leak check below stay generic over routes that don't exist yet.
+# The cost: this is coupled to FastAPI's internal dependency-injection shape,
+# not this repo's domain code. A future FastAPI upgrade that changes that shape
+# could break this helper for reasons that have nothing to do with interviewer
+# scoping — if these tests start failing right after a FastAPI bump, check here
+# first.
 def _dependant_calls(dependant):
     calls = {dependant.call}
     for sub in dependant.dependencies:
