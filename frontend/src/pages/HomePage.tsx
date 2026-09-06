@@ -24,8 +24,7 @@ function initials(fullName: string): string {
 // A candidate never leaves a terminal stage (Hired/Rejected), so those columns
 // only ever grow — left full-height by default they'd eventually dwarf the
 // in-flight stages that actually need daily attention. Collapsed to a count
-// chip by default; click to expand. Driven by stage.is_terminal from the API,
-// not a hardcoded name set.
+// chip by default; click to expand.
 
 function PipelineBoard() {
   const navigate = useNavigate();
