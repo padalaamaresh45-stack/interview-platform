@@ -185,6 +185,12 @@ code {
   background: rgba(255, 250, 240, 0.1);
 }
 
+.nav-rail-item:focus-visible {
+  outline: none;
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--brand), 0 0 0 4px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
 .nav-rail-item.active {
   background: var(--brand);
   color: var(--on-cta);
@@ -356,6 +362,12 @@ code {
   border-color: var(--text-muted);
 }
 
+.pipeline-column-collapsed:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
 .pipeline-column-collapse-toggle {
   background: transparent;
   border: none;
@@ -390,6 +402,12 @@ code {
   border-color: var(--text-muted);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+.pipeline-card:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent);
 }
 
 .pipeline-card-warning {

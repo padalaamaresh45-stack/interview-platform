@@ -248,6 +248,12 @@ function PipelineBoard() {
                     draggable
                     onDragStart={() => setDraggingId(candidate.id)}
                     onClick={() => navigate(`/candidates/${candidate.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/candidates/${candidate.id}`);
+                      }
+                    }}
                     role="button"
                     tabIndex={0}
                   >
