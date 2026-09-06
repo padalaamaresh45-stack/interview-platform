@@ -184,6 +184,30 @@ def compute_next_action(
     return "Review scores and decide"
 
 
+def compute_queue_state(
+    *,
+    round_status: RoundStatus,
+    has_active_interview: bool,
+    scorecard_due_at: datetime | None,
+    now: datetime | None = None,
+) -> str:
+    """The interviewer portal's three-state row treatment (ticket #33) —
+    "needs_scheduling" | "scheduled" | "overdue". A closed_unscored round
+    always folds into "overdue" regardless of any due date: an interviewer
+    doesn't care about the admin's round bookkeeping, only that they still owe
+    feedback. Otherwise overdue is keyed off scorecard_due_at, not interview
+    end time — a round still inside its feedback grace period is "scheduled",
+    not overdue, even though the interview already happened."""
+    if round_status == RoundStatus.closed_unscored:
+        return "overdue"
+    if not has_active_interview:
+        return "needs_scheduling"
+    now = now or datetime.now(timezone.utc)
+    if scorecard_due_at is not None and now >= scorecard_due_at:
+        return "overdue"
+    return "scheduled"
+
+
 def compute_current_owner(open_round) -> int | None:
     """A candidate's current owner is the assignee of its single open Round —
     never derived from a stored column. `open_round` is that Round (or None if

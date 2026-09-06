@@ -1,21 +1,44 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listMyCandidates, type MyCandidate } from "../api/interviewer";
+import { listMyCandidates, type InterviewerQueueRow, type InterviewerQueueState } from "../api/interviewer";
 import { useAuth } from "../hooks/useAuth";
 import { browserTimezone, formatDateTimeInZone } from "../utils/timezone";
 
+const STATE_LABEL: Record<InterviewerQueueState, string> = {
+  needs_scheduling: "Needs scheduling",
+  scheduled: "Interview scheduled",
+  overdue: "Scorecard overdue",
+};
+
+function rowCopy(row: InterviewerQueueRow): string {
+  if (row.is_closed_unscored) {
+    return row.next_stage_name
+      ? `Candidate has moved to ${row.next_stage_name} — your feedback is still needed.`
+      : "Candidate has moved on to the next stage — your feedback is still needed.";
+  }
+  switch (row.state) {
+    case "needs_scheduling":
+      return "Assigned — no interview scheduled yet.";
+    case "scheduled":
+      return "Interview scheduled — awaiting your scorecard.";
+    case "overdue":
+      return "Interview completed — your scorecard is overdue.";
+  }
+}
+
 export function InterviewerQueuePage() {
   const { user } = useAuth();
-  // scorecard_due_at renders in the interviewer's own profile timezone, not
-  // wherever their browser currently is — these can diverge while traveling.
+  // scheduled_at and scorecard_due_at both render in the interviewer's own
+  // profile timezone, not wherever their browser currently is — these can
+  // diverge while traveling. See ticket #29.
   const timezone = user?.timezone ?? browserTimezone();
-  const [candidates, setCandidates] = useState<MyCandidate[]>([]);
+  const [rows, setRows] = useState<InterviewerQueueRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     listMyCandidates()
-      .then(setCandidates)
+      .then(setRows)
       .catch((err) => setError(err instanceof Error ? err.message : "Something went wrong."))
       .finally(() => setLoading(false));
   }, []);
@@ -24,12 +47,12 @@ export function InterviewerQueuePage() {
     <main className="page">
       <div className="page-header">
         <h1>My candidates</h1>
-        <span className="page-header-count">{candidates.length} assigned to you</span>
+        <span className="page-header-count">{rows.length} assigned to you</span>
       </div>
       {error && <p role="alert">{error}</p>}
       {loading ? (
         <p>Loading…</p>
-      ) : candidates.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="detail-meta">You have no assigned candidates right now.</p>
       ) : (
         <div className="table-scroll">
@@ -37,25 +60,30 @@ export function InterviewerQueuePage() {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Stage</th>
+                <th>Brief</th>
+                <th>Scheduled</th>
                 <th>Status</th>
                 <th>Scorecard due</th>
               </tr>
             </thead>
             <tbody>
-              {candidates.map((candidate) => (
-                <tr key={candidate.id}>
+              {rows.map((row) => (
+                <tr key={row.round_id} data-state={row.state} className={`queue-row queue-row-${row.state}`}>
                   <td>
-                    <Link to={`/my-candidates/${candidate.id}`}>{candidate.full_name}</Link>
+                    <Link to={`/my-candidates/${row.candidate_id}`}>{row.candidate_full_name}</Link>
+                  </td>
+                  <td>{row.stage_name}</td>
+                  <td>{row.brief ?? "—"}</td>
+                  <td>
+                    {row.scheduled_at ? formatDateTimeInZone(row.scheduled_at, timezone) : "Not yet scheduled"}
                   </td>
                   <td>
-                    <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
-                      {candidate.status === "completed" ? "Scored" : "Awaiting your scorecard"}
-                    </span>
+                    <span className={`status-pill status-pill-${row.state}`}>{STATE_LABEL[row.state]}</span>
+                    <div className="detail-meta">{rowCopy(row)}</div>
                   </td>
                   <td>
-                    {candidate.scorecard_due_at
-                      ? formatDateTimeInZone(candidate.scorecard_due_at, timezone)
-                      : "Not yet scheduled"}
+                    {row.scorecard_due_at ? formatDateTimeInZone(row.scorecard_due_at, timezone) : "—"}
                   </td>
                 </tr>
               ))}

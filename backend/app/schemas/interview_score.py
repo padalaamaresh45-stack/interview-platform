@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -42,10 +43,25 @@ class InterviewerCandidateDetail(BaseModel):
     scores: list[InterviewScoreOut]
 
 
-class MyCandidateOut(CandidateOut):
-    """CandidateOut plus the interviewer-portal-only scorecard_due_at, derived
-    from the interviewer's own open round (not stored). Rendered by the
-    frontend in the interviewer's own User.timezone, not browser-local —
-    see ticket #29."""
+class InterviewerQueueRow(BaseModel):
+    """One row of the `/my-candidates` portal (ticket #33) — round-scoped, not
+    candidate-scoped: the query is submission authorization's shape
+    (assignee_id = me, status in {open, closed_unscored}), matching #26
+    exactly. `scheduled_at` and `scorecard_due_at` are both rendered by the
+    frontend in the interviewer's own User.timezone, not browser-local — see
+    ticket #29."""
 
+    round_id: int
+    candidate_id: int
+    candidate_full_name: str
+    stage_name: str
+    scheduled_at: datetime | None
+    brief: str | None
     scorecard_due_at: datetime | None
+    state: Literal["needs_scheduling", "scheduled", "overdue"]
+    is_closed_unscored: bool
+    # Only set when is_closed_unscored: the stage the candidate has since
+    # moved to, for row copy that names the move rather than using generic
+    # overdue language. None if the candidate's next round hasn't been
+    # created yet, or terminal-stage lookup found nothing.
+    next_stage_name: str | None

@@ -187,7 +187,7 @@ def test_interviewer_list_view_does_not_expose_other_rounds_score(client, db_ses
     resp = client.get("/api/interviewer/candidates")
     assert resp.status_code == 200
     body = resp.json()
-    mine = next((c for c in body if c["id"] == candidate.id), None)
+    mine = next((c for c in body if c["candidate_id"] == candidate.id), None)
     assert mine is not None
     # No field on the interviewer-facing list carries another round's score.
     assert "score" not in mine or mine.get("score") is None

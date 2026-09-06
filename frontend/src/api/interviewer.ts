@@ -39,11 +39,22 @@ async function parseOrThrow<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export interface MyCandidate extends Candidate {
+export type InterviewerQueueState = "needs_scheduling" | "scheduled" | "overdue";
+
+export interface InterviewerQueueRow {
+  round_id: number;
+  candidate_id: number;
+  candidate_full_name: string;
+  stage_name: string;
+  scheduled_at: string | null;
+  brief: string | null;
   scorecard_due_at: string | null;
+  state: InterviewerQueueState;
+  is_closed_unscored: boolean;
+  next_stage_name: string | null;
 }
 
-export async function listMyCandidates(): Promise<MyCandidate[]> {
+export async function listMyCandidates(): Promise<InterviewerQueueRow[]> {
   return parseOrThrow(await apiFetch("/api/interviewer/candidates"));
 }
 

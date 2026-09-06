@@ -1118,6 +1118,38 @@ code {
   background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
 }
 
+/* ---------- Interviewer portal three-state rows (ticket #33) ----------
+   needs_scheduling / scheduled / overdue must be distinguishable at a
+   glance, not just by reading the copy — a left border on the row plus a
+   colored pill gives each state a fixed visual signature regardless of
+   column width or copy length. closed_unscored rounds share the overdue
+   treatment; their distinct row copy comes from row text, not styling. */
+.queue-row-needs_scheduling {
+  border-left: 3px solid var(--text-muted);
+}
+
+.queue-row-scheduled {
+  border-left: 3px solid var(--health-on-track);
+}
+
+.queue-row-overdue {
+  border-left: 3px solid var(--health-stalled);
+}
+
+.status-pill-needs_scheduling {
+  color: var(--text-muted);
+}
+
+.status-pill-scheduled {
+  color: var(--text);
+  background: color-mix(in srgb, var(--health-on-track) 20%, transparent);
+}
+
+.status-pill-overdue {
+  color: var(--health-stalled);
+  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+}
+
 /* ---------- Row actions ----------
    Every row action (Edit, Deactivate, Reset password, ...) lives together
    in one Actions cell instead of one button sitting inline next to the

@@ -175,7 +175,7 @@ def test_deactivated_interviewer_excluded_from_picker_but_existing_assignment_un
     client.cookies.set(SESSION_COOKIE_NAME, interviewer_session.id)
     queue_resp = client.get("/api/interviewer/candidates")
     assert queue_resp.status_code == 200
-    assert any(row["id"] == candidate.id for row in queue_resp.json())
+    assert any(row["candidate_id"] == candidate.id for row in queue_resp.json())
 
 
 def test_interviewer_a_cannot_see_interviewer_b_candidate_in_queue(client, db_session):
@@ -190,7 +190,7 @@ def test_interviewer_a_cannot_see_interviewer_b_candidate_in_queue(client, db_se
     client.cookies.set(SESSION_COOKIE_NAME, session_a.id)
     queue_resp = client.get("/api/interviewer/candidates")
     assert queue_resp.status_code == 200
-    assert all(row["id"] != candidate_b.id for row in queue_resp.json())
+    assert all(row["candidate_id"] != candidate_b.id for row in queue_resp.json())
 
 
 def test_updated_at_bumps_on_edit(client, db_session):
