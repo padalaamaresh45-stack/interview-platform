@@ -36,7 +36,8 @@ def _seed_default_stages(mapper, connection, position: "Position") -> None:
                 "name": name,
                 "sequence_order": sequence_order,
                 "day_limit": day_limit,
+                "is_terminal": is_terminal,
             }
-            for sequence_order, (name, day_limit) in enumerate(DEFAULT_STAGES, start=1)
+            for sequence_order, (name, day_limit, is_terminal) in enumerate(DEFAULT_STAGES, start=1)
         ],
     )

@@ -12,7 +12,6 @@ from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User
 from app.pipeline.derive import derive_candidate_fields
-from app.pipeline.stages import TERMINAL_STAGE_NAMES
 from app.schemas.pipeline import (
     BoardCandidateOut,
     BoardColumnOut,
@@ -126,6 +125,7 @@ def get_board(
             current_stage_id=stage.id,
             current_stage_name=stage.name,
             stage_day_limit=stage.day_limit,
+            is_terminal=stage.is_terminal,
             entered_stage_at=transition.created_at,
             scores=scores_by_candidate.get(candidate.id, []),
             total_questions=question_counts.get(candidate.position_id, 0),
@@ -186,6 +186,7 @@ def _build_candidate_history(db: DBSession, candidate: Candidate) -> CandidateHi
         current_stage_id=current_stage.id,
         current_stage_name=current_stage.name,
         stage_day_limit=current_stage.day_limit,
+        is_terminal=current_stage.is_terminal,
         entered_stage_at=transitions[0].created_at,
         scores=scores,
         total_questions=question_count,
@@ -260,14 +261,29 @@ def move_candidate(
 
     if from_stage_id is not None and not payload.force:
         from_stage = db.get(Stage, from_stage_id)
-        if from_stage is not None and from_stage.name in TERMINAL_STAGE_NAMES:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"Candidate is already {from_stage.name}, which is a terminal stage. "
-                    "Confirm to move them anyway."
-                ),
-            )
+        if from_stage is not None:
+            if from_stage.is_terminal:
+                # Leaving a terminal stage always requires force, even to move
+                # to another terminal stage (e.g. Hired -> Rejected).
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"Candidate is already {from_stage.name}, which is a terminal stage. "
+                        "Confirm to move them anyway."
+                    ),
+                )
+            elif to_stage.is_terminal:
+                # Moving into a terminal stage from a non-terminal one is always
+                # allowed, regardless of sequence_order.
+                pass
+            elif to_stage.sequence_order < from_stage.sequence_order:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"Moving from {from_stage.name} back to {to_stage.name} is a backward move. "
+                        "Confirm to move them anyway."
+                    ),
+                )
 
     db.add(
         CandidateStageTransition(

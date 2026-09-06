@@ -12,6 +12,7 @@ class StageOut(BaseModel):
     name: str
     sequence_order: int
     day_limit: int | None
+    is_terminal: bool
 
     model_config = {"from_attributes": True}
 
@@ -31,7 +32,7 @@ class BoardCandidateOut(BaseModel):
     status: CandidateStatus
     current_stage_id: int
     days_in_stage: int
-    health: str
+    health: str | None
     next_action: str
     score: ScoreSummaryOut
 
@@ -72,7 +73,7 @@ class CandidateHistoryOut(BaseModel):
     current_stage_id: int
     current_stage_name: str
     days_in_stage: int
-    health: str
+    health: str | None
     next_action: str
     score: ScoreSummaryOut
     stage_history: list[StageTransitionOut]

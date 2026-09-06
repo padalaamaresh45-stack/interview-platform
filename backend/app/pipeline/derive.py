@@ -21,7 +21,7 @@ class DerivedCandidateFields:
     current_stage_id: int
     current_stage_name: str
     days_in_stage: int
-    health: str  # "on_track" | "stalled"
+    health: str | None  # "on_track" | "stalled" | None (terminal stage: not applicable)
     next_action: str
     score: ScoreSummary
 
@@ -33,7 +33,12 @@ def compute_days_in_stage(entered_stage_at: datetime, *, now: datetime | None = 
     return max((now - entered_stage_at).days, 0)
 
 
-def compute_health(days_in_stage: int, day_limit: int | None) -> str:
+def compute_health(days_in_stage: int, day_limit: int | None, is_terminal: bool) -> str | None:
+    # A hired or rejected candidate cannot stall — health is inapplicable for a
+    # terminal stage, not a default "on_track". None forces every caller to
+    # handle the absence rather than silently defaulting.
+    if is_terminal:
+        return None
     if day_limit is not None and days_in_stage > day_limit:
         return "stalled"
     return "on_track"
@@ -48,10 +53,10 @@ def compute_score_summary(scores: list, total_questions: int) -> ScoreSummary:
 def compute_next_action(
     *,
     candidate_status: CandidateStatus,
-    current_stage_name: str,
+    is_terminal: bool,
     score_summary: ScoreSummary,
 ) -> str:
-    if current_stage_name in ("Hired", "Rejected"):
+    if is_terminal:
         return "None"
     if candidate_status == CandidateStatus.not_started:
         return "Submit interview scores"
@@ -66,17 +71,18 @@ def derive_candidate_fields(
     current_stage_id: int,
     current_stage_name: str,
     stage_day_limit: int | None,
+    is_terminal: bool,
     entered_stage_at: datetime,
     scores: list,
     total_questions: int,
     now: datetime | None = None,
 ) -> DerivedCandidateFields:
     days_in_stage = compute_days_in_stage(entered_stage_at, now=now)
-    health = compute_health(days_in_stage, stage_day_limit)
+    health = compute_health(days_in_stage, stage_day_limit, is_terminal=is_terminal)
     score_summary = compute_score_summary(scores, total_questions)
     next_action = compute_next_action(
         candidate_status=candidate_status,
-        current_stage_name=current_stage_name,
+        is_terminal=is_terminal,
         score_summary=score_summary,
     )
     return DerivedCandidateFields(

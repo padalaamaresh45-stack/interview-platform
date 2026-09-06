@@ -6,6 +6,7 @@ export interface Stage {
   name: string;
   sequence_order: number;
   day_limit: number | null;
+  is_terminal: boolean;
 }
 
 export interface ScoreSummary {
@@ -23,7 +24,7 @@ export interface BoardCandidate {
   status: "not_started" | "completed";
   current_stage_id: number;
   days_in_stage: number;
-  health: "on_track" | "stalled";
+  health: "on_track" | "stalled" | null;
   next_action: string;
   score: ScoreSummary;
 }
@@ -66,7 +67,7 @@ export interface CandidateHistory {
   current_stage_id: number;
   current_stage_name: string;
   days_in_stage: number;
-  health: "on_track" | "stalled";
+  health: "on_track" | "stalled" | null;
   next_action: string;
   score: ScoreSummary;
   stage_history: StageTransition[];

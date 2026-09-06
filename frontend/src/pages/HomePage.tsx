@@ -21,13 +21,11 @@ function initials(fullName: string): string {
   return (first + last).toUpperCase();
 }
 
-// A candidate never leaves Hired/Rejected, so those columns only ever grow —
-// left full-height by default they'd eventually dwarf the in-flight stages
-// that actually need daily attention. Collapsed to a count chip by default;
-// click to expand. Identified by name since the schema has no is_terminal
-// flag on Stage yet — every seeded pipeline names them exactly this.
-const TERMINAL_STAGE_NAMES = new Set(["Hired", "Rejected"]);
-
+// A candidate never leaves a terminal stage (Hired/Rejected), so those columns
+// only ever grow — left full-height by default they'd eventually dwarf the
+// in-flight stages that actually need daily attention. Collapsed to a count
+// chip by default; click to expand. Driven by stage.is_terminal from the API,
+// not a hardcoded name set.
 
 function PipelineBoard() {
   const navigate = useNavigate();
@@ -43,8 +41,8 @@ function PipelineBoard() {
   const [positionFilter, setPositionFilter] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
-  // Explicit expand/collapse per stage id, seeded from TERMINAL_STAGE_NAMES
-  // the first time each board loads (see expandedStages initialization
+  // Explicit expand/collapse per stage id, seeded from each stage's
+  // is_terminal flag the first time each board loads (see expandedStages initialization
   // below) — once a user expands a terminal column it stays expanded for
   // the rest of the session, it doesn't re-collapse on the next refresh.
   const [expandedStages, setExpandedStages] = useState<Record<number, boolean>>({});
@@ -185,7 +183,7 @@ function PipelineBoard() {
                 column.candidates.reduce((sum, c) => sum + c.days_in_stage, 0) / column.candidates.length,
               )
             : null;
-          const isTerminal = TERMINAL_STAGE_NAMES.has(column.stage.name);
+          const isTerminal = column.stage.is_terminal;
           const isExpanded = expandedStages[column.stage.id] ?? !isTerminal;
 
           if (isTerminal && !isExpanded) {
@@ -240,7 +238,7 @@ function PipelineBoard() {
                 column.candidates.map((candidate) => (
                   <div
                     key={candidate.id}
-                    className={`pipeline-card health-${candidate.health}`}
+                    className={`pipeline-card${candidate.health ? ` health-${candidate.health}` : ""}`}
                     draggable
                     onDragStart={() => setDraggingId(candidate.id)}
                     onClick={() => navigate(`/candidates/${candidate.id}`)}
@@ -249,9 +247,11 @@ function PipelineBoard() {
                   >
                     <div className="pipeline-card-top">
                       <span className="pipeline-card-avatar">{initials(candidate.full_name)}</span>
-                      <span className={`health-pill ${candidate.health}`}>
-                        {candidate.health === "stalled" ? "Stalled" : "On track"}
-                      </span>
+                      {candidate.health && (
+                        <span className={`health-pill ${candidate.health}`}>
+                          {candidate.health === "stalled" ? "Stalled" : "On track"}
+                        </span>
+                      )}
                       <span className={`pipeline-card-days ${candidate.health === "stalled" ? "danger" : "muted"}`}>
                         {candidate.days_in_stage}d
                       </span>

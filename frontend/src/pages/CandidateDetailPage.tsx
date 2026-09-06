@@ -229,19 +229,21 @@ export function CandidateDetailPage() {
         ) : (
           <div className="panel">
             <div className="stage-progress">
-              {stages.map((stage, i) => {
-                const currentIndex = stages.findIndex((s) => s.id === history.current_stage_id);
-                const status = i < currentIndex ? "done" : i === currentIndex ? "current" : "";
-                return (
-                  <Fragment key={stage.id}>
-                    {i > 0 && <div className={`stage-progress-line ${i <= currentIndex ? "done" : ""}`} />}
-                    <div className={`stage-progress-step ${status}`}>
-                      <span className="stage-progress-dot" />
-                      <span className="stage-progress-label">{stage.name}</span>
-                    </div>
-                  </Fragment>
-                );
-              })}
+              {stages
+                .filter((stage) => !stage.is_terminal)
+                .map((stage, i, nonTerminalStages) => {
+                  const currentIndex = nonTerminalStages.findIndex((s) => s.id === history.current_stage_id);
+                  const status = i < currentIndex ? "done" : i === currentIndex ? "current" : "";
+                  return (
+                    <Fragment key={stage.id}>
+                      {i > 0 && <div className={`stage-progress-line ${i <= currentIndex ? "done" : ""}`} />}
+                      <div className={`stage-progress-step ${status}`}>
+                        <span className="stage-progress-dot" />
+                        <span className="stage-progress-label">{stage.name}</span>
+                      </div>
+                    </Fragment>
+                  );
+                })}
             </div>
 
             <div className="stat-row">
@@ -253,12 +255,14 @@ export function CandidateDetailPage() {
                 <span className="stat-label">Days in stage</span>
                 <span className="stat-value">{history.days_in_stage}</span>
               </div>
-              <div className="stat">
-                <span className="stat-label">Health</span>
-                <span className={`stat-value ${history.health === "stalled" ? "danger" : ""}`}>
-                  {history.health === "stalled" ? "Stalled" : "On track"}
-                </span>
-              </div>
+              {history.health && (
+                <div className="stat">
+                  <span className="stat-label">Health</span>
+                  <span className={`stat-value ${history.health === "stalled" ? "danger" : ""}`}>
+                    {history.health === "stalled" ? "Stalled" : "On track"}
+                  </span>
+                </div>
+              )}
               <div className="stat">
                 <span className="stat-label">Next action</span>
                 <span className="stat-value">{history.next_action}</span>

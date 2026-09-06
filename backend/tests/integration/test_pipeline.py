@@ -141,6 +141,88 @@ def test_move_to_stage_outside_position_is_rejected(client, db_session):
     assert resp.status_code == 400
 
 
+def test_backward_move_between_non_terminal_stages_is_blocked_without_force(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+
+    stages = {
+        s.name: s for s in db_session.query(Stage).filter(Stage.position_id == position.id)
+    }
+    # Applied -> Under review (forward, no force needed)
+    forward_resp = client.post(
+        f"/api/pipeline/candidates/{candidate.id}/move", json={"to_stage_id": stages["Under review"].id}
+    )
+    assert forward_resp.status_code == 200
+
+    # Under review -> Screening (backward, blocked without force)
+    blocked_resp = client.post(
+        f"/api/pipeline/candidates/{candidate.id}/move", json={"to_stage_id": stages["Screening"].id}
+    )
+    assert blocked_resp.status_code == 409
+
+    forced_resp = client.post(
+        f"/api/pipeline/candidates/{candidate.id}/move",
+        json={"to_stage_id": stages["Screening"].id, "force": True},
+    )
+    assert forced_resp.status_code == 200
+    assert forced_resp.json()["current_stage_id"] == stages["Screening"].id
+
+
+def test_forward_move_between_non_terminal_stages_needs_no_force(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+
+    stages = {
+        s.name: s for s in db_session.query(Stage).filter(Stage.position_id == position.id)
+    }
+    resp = client.post(f"/api/pipeline/candidates/{candidate.id}/move", json={"to_stage_id": stages["Offer"].id})
+    assert resp.status_code == 200
+    assert resp.json()["current_stage_id"] == stages["Offer"].id
+
+
+def test_moving_into_terminal_stage_needs_no_force_from_any_stage(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+
+    stages = {
+        s.name: s for s in db_session.query(Stage).filter(Stage.position_id == position.id)
+    }
+    # Candidate starts at Applied (sequence_order 1) — moving straight to
+    # Rejected (sequence_order 6, terminal) skips every stage in between but
+    # must still not require force, since the destination is terminal.
+    resp = client.post(f"/api/pipeline/candidates/{candidate.id}/move", json={"to_stage_id": stages["Rejected"].id})
+    assert resp.status_code == 200
+    assert resp.json()["current_stage_id"] == stages["Rejected"].id
+
+
+def test_list_stages_returns_terminal_stages_unfiltered(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+
+    resp = client.get(f"/api/pipeline/stages?position_id={position.id}")
+    assert resp.status_code == 200
+    names = [s["name"] for s in resp.json()]
+    assert names == ["Applied", "Screening", "Under review", "Offer", "Hired", "Rejected"]
+    terminal_flags = {s["name"]: s["is_terminal"] for s in resp.json()}
+    assert terminal_flags == {
+        "Applied": False,
+        "Screening": False,
+        "Under review": False,
+        "Offer": False,
+        "Hired": True,
+        "Rejected": True,
+    }
+
+
 def test_move_out_of_terminal_stage_is_blocked_without_force(client, db_session):
     admin = _admin_client(client, db_session)
     position = _make_position(db_session, admin)
@@ -165,6 +247,26 @@ def test_move_out_of_terminal_stage_is_blocked_without_force(client, db_session)
     )
     assert forced_resp.status_code == 200
     assert forced_resp.json()["current_stage_id"] == stages["Rejected"].id
+
+
+def test_candidate_in_terminal_stage_has_null_health_not_on_track(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+
+    stages = {
+        s.name: s for s in db_session.query(Stage).filter(Stage.position_id == position.id)
+    }
+    client.post(f"/api/pipeline/candidates/{candidate.id}/move", json={"to_stage_id": stages["Rejected"].id})
+
+    history_resp = client.get(f"/api/pipeline/candidates/{candidate.id}")
+    assert history_resp.json()["health"] is None
+
+    board = client.get(f"/api/pipeline/board?position_id={position.id}").json()
+    rejected_column = next(c for c in board["columns"] if c["stage"]["name"] == "Rejected")
+    assert rejected_column["candidates"][0]["health"] is None
 
 
 def test_candidate_history_includes_scores(client, db_session):
