@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 from app.auth.hashing import hash_password
 from app.auth.session import SESSION_COOKIE_NAME, create_session
 from app.models.candidate import Candidate, CandidateStatus
+from app.models.interview import Interview
 from app.models.position import Position
 from app.models.question import Question
 from app.models.round import Round, RoundStatus
@@ -71,6 +74,18 @@ def _make_candidate(db_session, admin, position, interviewer, *, status=Candidat
     db_session.commit()
     db_session.refresh(candidate)
     return candidate
+
+
+def _make_candidate_with_active_interview(db_session, admin, position, interviewer):
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+    round_ = db_session.query(Round).filter(Round.candidate_id == candidate.id).one()
+    interview = Interview(
+        candidate_id=candidate.id, round_id=round_.id, scheduled_at=datetime.now(timezone.utc), created_by=admin.id
+    )
+    db_session.add(interview)
+    db_session.commit()
+    db_session.refresh(interview)
+    return candidate, round_, interview
 
 
 def test_create_against_zero_question_position_returns_400(client, db_session):
@@ -191,6 +206,101 @@ def test_updated_at_bumps_on_edit(client, db_session):
     assert resp.json()["updated_at"] != original_updated_at
 
 
+def test_hold_with_scheduled_interview_requires_explicit_choice(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate, _round, _interview = _make_candidate_with_active_interview(db_session, admin, position, interviewer)
+
+    resp = client.post(f"/api/admin/candidates/{candidate.id}/hold", json={"reason": "Waiting on references"})
+    assert resp.status_code == 400
+    db_session.refresh(candidate)
+    assert candidate.hold_reason is None
+
+
+def test_hold_with_keep_leaves_interview_untouched(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate, _round, interview = _make_candidate_with_active_interview(db_session, admin, position, interviewer)
+
+    resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/hold",
+        json={"reason": "Waiting on references", "interview_action": "keep"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["hold_reason"] == "Waiting on references"
+    db_session.refresh(interview)
+    assert interview.status.value == "scheduled"
+
+
+def test_hold_with_cancel_soft_cancels_interview(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate, round_, interview = _make_candidate_with_active_interview(db_session, admin, position, interviewer)
+
+    resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/hold",
+        json={"reason": "Waiting on references", "interview_action": "cancel"},
+    )
+    assert resp.status_code == 200
+    db_session.refresh(interview)
+    assert interview.status.value == "cancelled"
+
+    db_session.refresh(round_)
+    assert round_.status == RoundStatus.open
+
+
+def test_hold_with_no_scheduled_interview_proceeds_immediately(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+    candidate = _make_candidate(db_session, admin, position, interviewer)
+
+    resp = client.post(f"/api/admin/candidates/{candidate.id}/hold", json={"reason": "Waiting on references"})
+    assert resp.status_code == 200
+    assert resp.json()["hold_reason"] == "Waiting on references"
+
+
+def _gap_state_for(board_body, candidate_id):
+    for column in board_body["columns"]:
+        for c in column["candidates"]:
+            if c["id"] == candidate_id:
+                return c["gap_state"]
+    return None
+
+
+def test_hold_suspends_gap_state_regardless_of_interview_choice(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    _make_question(db_session, position)
+    interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
+
+    kept, _kept_round, _kept_interview = _make_candidate_with_active_interview(db_session, admin, position, interviewer)
+    client.post(f"/api/admin/candidates/{kept.id}/hold", json={"reason": "r", "interview_action": "keep"})
+
+    cancelled, _cancelled_round, _cancelled_interview = _make_candidate_with_active_interview(
+        db_session, admin, position, interviewer
+    )
+    client.post(f"/api/admin/candidates/{cancelled.id}/hold", json={"reason": "r", "interview_action": "cancel"})
+
+    board = client.get("/api/pipeline/board")
+    assert board.status_code == 200
+    body = board.json()
+    assert _gap_state_for(body, kept.id) == "on_hold"
+    assert _gap_state_for(body, cancelled.id) == "on_hold"
+
+    for candidate_id in (kept.id, cancelled.id):
+        history_resp = client.get(f"/api/pipeline/candidates/{candidate_id}")
+        assert history_resp.status_code == 200
+        assert history_resp.json()["health"] is None
+
+
 def test_non_admin_gets_403_on_every_admin_route_in_this_module(client, db_session):
     admin = _admin_client(client, db_session)
     position = _make_position(db_session, admin)
@@ -214,5 +324,6 @@ def test_non_admin_gets_403_on_every_admin_route_in_this_module(client, db_sessi
     assert client.get("/api/admin/candidates").status_code == 403
     assert client.get(f"/api/admin/candidates/{candidate.id}").status_code == 403
     assert client.patch(f"/api/admin/candidates/{candidate.id}", json={"full_name": "X"}).status_code == 403
+    assert client.post(f"/api/admin/candidates/{candidate.id}/hold", json={"reason": "r"}).status_code == 403
     assert client.delete(f"/api/admin/candidates/{candidate.id}").status_code == 403
     assert client.get("/api/admin/interviewers").status_code == 403

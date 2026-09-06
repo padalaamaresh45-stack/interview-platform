@@ -70,6 +70,21 @@ export async function updateCandidate(
   );
 }
 
+export interface HoldRequest {
+  reason: string;
+  review_by?: string | null;
+  interview_action?: "keep" | "cancel";
+}
+
+export async function holdCandidate(id: number, payload: HoldRequest): Promise<Candidate> {
+  return parseOrThrow(
+    await apiFetch(`/api/admin/candidates/${id}/hold`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
 export async function reassignRound(candidateId: number, assigneeId: number): Promise<void> {
   await parseOrThrow(
     await apiFetch(`/api/admin/candidates/${candidateId}/rounds/reassign`, {

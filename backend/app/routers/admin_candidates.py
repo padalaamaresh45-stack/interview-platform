@@ -5,13 +5,14 @@ from sqlalchemy.orm import Session as DBSession
 from app.auth.dependencies import require_admin
 from app.database import get_db
 from app.models.candidate import Candidate, CandidateStatus
+from app.models.interview import InterviewStatus
 from app.models.position import Position
 from app.models.question import Question
 from app.models.round import Round
 from app.models.stage import Stage
 from app.models.user import User, UserRole
-from app.pipeline.access import candidate_to_out
-from app.schemas.candidate import CandidateCreate, CandidateOut, CandidateUpdate, InterviewerOut
+from app.pipeline.access import candidate_to_out, get_active_interview_for_round, get_open_round
+from app.schemas.candidate import CandidateCreate, CandidateOut, CandidateUpdate, HoldRequest, InterviewerOut
 
 router = APIRouter(prefix="/api/admin/candidates", tags=["admin-candidates"])
 
@@ -110,6 +111,34 @@ def update_candidate(
     if "phone" in updates:
         candidate.phone = updates["phone"]
 
+    db.commit()
+    db.refresh(candidate)
+    return candidate_to_out(db, candidate)
+
+
+@router.post("/{candidate_id}/hold", response_model=CandidateOut)
+def hold_candidate(
+    candidate_id: int,
+    payload: HoldRequest,
+    db: DBSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    candidate = _get_candidate_or_404(db, candidate_id)
+
+    open_round = get_open_round(db, candidate_id)
+    active_interview = get_active_interview_for_round(db, open_round.id) if open_round is not None else None
+
+    if active_interview is not None and payload.interview_action is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This candidate has a scheduled interview. Choose to keep or cancel it before placing them on hold.",
+        )
+
+    if active_interview is not None and payload.interview_action == "cancel":
+        active_interview.status = InterviewStatus.cancelled
+
+    candidate.hold_reason = payload.reason
+    candidate.hold_review_by = payload.review_by
     db.commit()
     db.refresh(candidate)
     return candidate_to_out(db, candidate)

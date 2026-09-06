@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,15 @@ class CandidateUpdate(BaseModel):
     full_name: str | None = Field(default=None, min_length=1, max_length=255)
     email: str | None = None
     phone: str | None = None
+
+
+class HoldRequest(BaseModel):
+    reason: str = Field(min_length=1)
+    review_by: date | None = None
+    # Required only when the candidate's open round has a scheduled (non-cancelled)
+    # interview — the hold endpoint rejects the request with no default in that
+    # case rather than silently choosing keep or cancel for the admin.
+    interview_action: Literal["keep", "cancel"] | None = None
 
 
 class CandidateOut(BaseModel):

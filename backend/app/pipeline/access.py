@@ -15,6 +15,7 @@ independent queries, deliberately not derived from one another:
 from sqlalchemy.orm import Session as DBSession
 
 from app.models.candidate import Candidate
+from app.models.interview import Interview, InterviewStatus
 from app.models.round import Round, RoundStatus
 from app.pipeline.derive import compute_current_owner
 
@@ -56,6 +57,14 @@ def candidate_to_out(db: DBSession, candidate: Candidate):
         created_by=candidate.created_by,
         created_at=candidate.created_at,
         updated_at=candidate.updated_at,
+    )
+
+
+def get_active_interview_for_round(db: DBSession, round_id: int) -> Interview | None:
+    return (
+        db.query(Interview)
+        .filter(Interview.round_id == round_id, Interview.status != InterviewStatus.cancelled)
+        .first()
     )
 
 

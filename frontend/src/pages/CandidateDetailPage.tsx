@@ -1,6 +1,13 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteCandidate, getCandidate, reassignRound, updateCandidate, type Candidate } from "../api/candidates";
+import {
+  deleteCandidate,
+  getCandidate,
+  holdCandidate,
+  reassignRound,
+  updateCandidate,
+  type Candidate,
+} from "../api/candidates";
 import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
 import {
@@ -57,6 +64,11 @@ export function CandidateDetailPage() {
   const [reassignTargetId, setReassignTargetId] = useState("");
   const [reassignError, setReassignError] = useState<string | null>(null);
 
+  const [holdReason, setHoldReason] = useState("");
+  const [holdReviewBy, setHoldReviewBy] = useState("");
+  const [holdInterviewAction, setHoldInterviewAction] = useState<"keep" | "cancel" | "">("");
+  const [holdError, setHoldError] = useState<string | null>(null);
+
   async function refresh() {
     try {
       const [candidateData, positionList, userList] = await Promise.all([
@@ -90,12 +102,19 @@ export function CandidateDetailPage() {
     }
   }
 
+  async function refreshInterviews() {
+    try {
+      const all = await listAllInterviews();
+      setInterviews(all.filter((i) => i.candidate_id === id));
+    } catch {
+      setInterviews([]);
+    }
+  }
+
   useEffect(() => {
     refresh();
     refreshHistory();
-    listAllInterviews()
-      .then((all) => setInterviews(all.filter((i) => i.candidate_id === id)))
-      .catch(() => setInterviews([]));
+    refreshInterviews();
     getConsolidation(id)
       .then((data) => {
         setConsolidation(data);
@@ -157,6 +176,27 @@ export function CandidateDetailPage() {
     }
   }
 
+  async function handleHold(e: FormEvent) {
+    e.preventDefault();
+    if (candidate === null) return;
+    try {
+      await holdCandidate(id, {
+        reason: holdReason,
+        review_by: holdReviewBy || null,
+        interview_action: holdInterviewAction || undefined,
+      });
+      setHoldError(null);
+      setHoldReason("");
+      setHoldReviewBy("");
+      setHoldInterviewAction("");
+      await refresh();
+      await refreshHistory();
+      await refreshInterviews();
+    } catch (err) {
+      setHoldError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
   async function handleDelete() {
     try {
       await deleteCandidate(id);
@@ -176,6 +216,9 @@ export function CandidateDetailPage() {
 
   const canChangeAssignment = candidate.status === "not_started";
   const position = positions.find((p) => p.id === candidate.position_id);
+  const hasScheduledInterview =
+    candidate.open_round_id !== null &&
+    (interviews ?? []).some((iv) => iv.round_id === candidate.open_round_id);
 
   return (
     <main className="page">
@@ -252,6 +295,68 @@ export function CandidateDetailPage() {
               <p className="detail-meta">A completed candidate cannot be deleted.</p>
             )}
           </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Hold</h2>
+        <div className="panel">
+          {candidate.hold_reason ? (
+            <p className="detail-meta">
+              On hold: {candidate.hold_reason}
+              {candidate.hold_review_by && ` (review by ${candidate.hold_review_by})`}
+            </p>
+          ) : (
+            <form onSubmit={handleHold}>
+              <div className="field">
+                <label htmlFor="hold-reason">Reason</label>
+                <input
+                  id="hold-reason"
+                  value={holdReason}
+                  onChange={(e) => setHoldReason(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="hold-review-by">Review by</label>
+                <input
+                  id="hold-review-by"
+                  type="date"
+                  value={holdReviewBy}
+                  onChange={(e) => setHoldReviewBy(e.target.value)}
+                />
+              </div>
+              {hasScheduledInterview && (
+                <div className="field">
+                  <label>Scheduled interview</label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="hold-interview-action"
+                      value="keep"
+                      checked={holdInterviewAction === "keep"}
+                      onChange={() => setHoldInterviewAction("keep")}
+                    />{" "}
+                    Keep it
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="hold-interview-action"
+                      value="cancel"
+                      checked={holdInterviewAction === "cancel"}
+                      onChange={() => setHoldInterviewAction("cancel")}
+                    />{" "}
+                    Cancel it
+                  </label>
+                </div>
+              )}
+              <button type="submit" disabled={hasScheduledInterview && !holdInterviewAction}>
+                Place on hold
+              </button>
+            </form>
+          )}
+          {holdError && <p role="alert">{holdError}</p>}
         </div>
       </section>
 

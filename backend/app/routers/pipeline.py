@@ -190,6 +190,7 @@ def get_board(
             entered_stage_at=transition.created_at,
             scores=scores_by_candidate.get(candidate.id, []),
             total_questions=question_counts.get(candidate.position_id, 0),
+            hold_reason=candidate.hold_reason,
         )
         position = positions.get(candidate.position_id)
         open_round = open_rounds.get(candidate.id)
@@ -267,6 +268,7 @@ def _build_candidate_history(db: DBSession, candidate: Candidate) -> CandidateHi
         entered_stage_at=transitions[0].created_at,
         scores=scores,
         total_questions=question_count,
+        hold_reason=candidate.hold_reason,
     )
 
     stage_history = [

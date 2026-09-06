@@ -67,12 +67,17 @@ def compute_health(
     day_limit: int | None,
     is_terminal: bool,
     *,
+    hold_reason: str | None = None,
     scorecard_overdue: bool = False,
 ) -> str | None:
     # A hired or rejected candidate cannot stall — health is inapplicable for a
     # terminal stage, not a default "on_track". None forces every caller to
     # handle the absence rather than silently defaulting.
     if is_terminal:
+        return None
+    # Hold suspends health entirely — never stalled, never a warning color —
+    # same treatment as terminal, regardless of days in stage or interview state.
+    if hold_reason is not None:
         return None
     if scorecard_overdue:
         return "stalled"
@@ -197,10 +202,11 @@ def derive_candidate_fields(
     entered_stage_at: datetime,
     scores: list,
     total_questions: int,
+    hold_reason: str | None = None,
     now: datetime | None = None,
 ) -> DerivedCandidateFields:
     days_in_stage = compute_days_in_stage(entered_stage_at, now=now)
-    health = compute_health(days_in_stage, stage_day_limit, is_terminal=is_terminal)
+    health = compute_health(days_in_stage, stage_day_limit, is_terminal=is_terminal, hold_reason=hold_reason)
     score_summary = compute_score_summary(scores, total_questions)
     next_action = compute_next_action(
         candidate_status=candidate_status,
