@@ -1,5 +1,13 @@
 # Epic: Interview rounds with per-round ownership
 
+## Decisions that changed and why
+
+- **`closed_unscored`** went from a single (rejection-path) writer to two independent, equally-primary writers. Why: advancing a candidate to the next round while the prior round was still unscored needed the same "close it out without a scorecard" outcome as rejection — inventing a second status for that case would have reintroduced the exact drift pattern (`compute_health`/`compute_next_action`, §4.1) this epic exists to avoid.
+- **Invariant 3** went from "a round cannot close without a submitted scorecard" to "a round can only transition to `scored` if a scorecard was submitted for it." Why: the original wording was already false the moment `closed_unscored` existed — rejection closes a round with no scorecard by design. Correction to a pre-existing doc defect, not a consequence of any later rule.
+- **Submission authorization** went from candidate-scoped ("an open `Round` exists for this candidate with this user as assignee") to `round_id`-scoped ("does this specific `round_id` belong to this user, with no scorecard yet"). Why: the candidate-scoped version directly contradicted one-open-round-per-candidate — a round-1 interviewer's late submission, after the admin already opened round 2, needed round 1 to be both closed (satisfying the uniqueness rule) and still submittable, which an "is it open" filter can't express. The caller must say which round it means, since a re-interviewed candidate can have more than one round per interviewer.
+- **#16 AC4** (`TERMINAL_STAGE_NAMES` grep must return zero matches): became "zero matches outside the backfill migration file." Why: the two remaining hits are historical record of a one-time backfill, not runtime code.
+- **#29 AC1** ("`User.timezone` set exactly once, at account creation"): became "set from browser inference on any login where it's still unset." Why: behaviorally equivalent for the property the AC actually protects — a set value, however it was set, is never overwritten by inference again — and simpler to implement than gating specifically on first-ever login.
+
 No code has been written for this epic. This document captures the design as decided in conversation; it precedes `/spec` and ticket creation.
 
 ## Why

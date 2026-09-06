@@ -1,5 +1,10 @@
 # UI Consistency & Data Integrity Audit
 
+## Decisions that changed and why
+
+- **#16 AC4** (`TERMINAL_STAGE_NAMES` grep must return zero matches): became "zero matches outside the backfill migration file." Why: the two remaining hits are historical record of a one-time backfill, not runtime code — no name-based terminal check remains anywhere `Stage.is_terminal` is actually consulted.
+- **#18 AC3** (focus ring on `.record-card`): its target relocated from `.record-card` to `<Link>` elements inside `<tr>` rows. Why: #22 migrated Positions/InterviewerQueue/Calendar's day-detail list from `.record-card` to table rows before #18 landed, so the selector named in the original AC no longer existed — the requirement (a focus ring on record-equivalent navigation targets) still applied to its new location.
+
 Scope: pipeline board (`/`), `/positions`, `/candidates`, `/candidates/:id`, `/users`, `/my-candidates`, `/calendar`, `/login`. All values below are read directly from `frontend/src/index.css`, the page components, and (for Part 2) live queries against the running dev database. Nothing in this document has been fixed — it's an inventory.
 
 ## 1. Five tables of actual values found
