@@ -1,5 +1,6 @@
 """Ownership and access queries for Candidates, scoped through Round — the
-only source of truth since Candidate.interviewer_id was dropped. Three
+only source of truth now that Candidate no longer carries an interviewer
+column directly. Three
 independent queries, deliberately not derived from one another:
 
 - get_open_round: backs `compute_current_owner` (display).

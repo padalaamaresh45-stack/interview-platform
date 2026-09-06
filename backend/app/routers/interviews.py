@@ -14,9 +14,10 @@ router = APIRouter(tags=["interviews"])
 
 
 def _to_out(db: DBSession, interview: Interview) -> InterviewOut:
+    # round_id is a NOT NULL FK to rounds.id — round_ is guaranteed to exist.
     round_ = db.get(Round, interview.round_id)
     candidate = db.get(Candidate, interview.candidate_id)
-    interviewer = db.get(User, round_.assignee_id) if round_ else None
+    interviewer = db.get(User, round_.assignee_id)
     position = db.get(Position, candidate.position_id) if candidate else None
     return InterviewOut(
         id=interview.id,
@@ -24,8 +25,8 @@ def _to_out(db: DBSession, interview: Interview) -> InterviewOut:
         candidate_name=candidate.full_name if candidate else f"#{interview.candidate_id}",
         position_title=position.title if position else "—",
         round_id=interview.round_id,
-        interviewer_id=round_.assignee_id if round_ else 0,
-        interviewer_name=interviewer.full_name if interviewer else f"#{round_.assignee_id if round_ else '?'}",
+        interviewer_id=round_.assignee_id,
+        interviewer_name=interviewer.full_name if interviewer else f"#{round_.assignee_id}",
         status=interview.status,
         scheduled_at=interview.scheduled_at,
         duration_minutes=interview.duration_minutes,

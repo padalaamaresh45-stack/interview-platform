@@ -8,7 +8,7 @@ from app.models.interview_score import InterviewScore
 from app.models.question import Question
 from app.models.round import Round, RoundStatus
 from app.models.user import User
-from app.pipeline.access import candidate_to_out, get_open_round, interviewer_has_access
+from app.pipeline.access import candidate_to_out, interviewer_has_access
 from app.schemas.candidate import CandidateOut
 from app.schemas.interview_score import InterviewerCandidateDetail, ScoreSubmitRequest
 from app.scoring.submit import submit_scores
@@ -56,8 +56,21 @@ def get_my_candidate(
         .order_by(Question.sequence_order)
         .all()
     )
-    scores = db.query(InterviewScore).filter(InterviewScore.candidate_id == candidate.id).all()
-    open_round = get_open_round(db, candidate.id)
+    # This interviewer's own round for this candidate — prefer their open one
+    # (the one they're meant to be scoring right now); otherwise their most
+    # recent one. A candidate can have more than one round across stages
+    # (re-interviewed), and scores are per-round now, so this must not fall
+    # back to every score ever recorded for the candidate across every
+    # interviewer's rounds.
+    my_round = (
+        db.query(Round)
+        .filter(Round.candidate_id == candidate.id, Round.assignee_id == interviewer.id)
+        .order_by((Round.status == RoundStatus.open).desc(), Round.created_at.desc())
+        .first()
+    )
+    scores = (
+        db.query(InterviewScore).filter(InterviewScore.round_id == my_round.id).all() if my_round is not None else []
+    )
     return InterviewerCandidateDetail(
         id=candidate.id,
         full_name=candidate.full_name,
@@ -65,7 +78,11 @@ def get_my_candidate(
         phone=candidate.phone,
         position_id=candidate.position_id,
         status=candidate.status,
-        round_id=open_round.id if open_round is not None else None,
+        round_id=(
+            my_round.id
+            if my_round is not None and my_round.status in (RoundStatus.open, RoundStatus.closed_unscored)
+            else None
+        ),
         questions=questions,
         scores=scores,
     )

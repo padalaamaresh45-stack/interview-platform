@@ -131,6 +131,46 @@ def test_rounds_partial_unique_index_rejects_second_open_round(db_session):
     db_session.rollback()
 
 
+def test_rounds_partial_unique_index_rejects_concurrent_second_open_round(db_session):
+    import threading
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from tests.conftest import TEST_DATABASE_URL
+
+    admin = _make_admin(db_session)
+    position = _make_position(db_session, admin)
+    interviewer = _make_interviewer(db_session)
+    candidate = _make_candidate(db_session, admin, position)
+    stage_id = _first_stage_id(db_session, position)
+    db_session.commit()
+
+    engine = create_engine(TEST_DATABASE_URL)
+    Session = sessionmaker(bind=engine)
+    results = []
+
+    def insert_round():
+        session = Session()
+        try:
+            session.add(Round(candidate_id=candidate.id, stage_id=stage_id, assignee_id=interviewer.id))
+            session.commit()
+            results.append("ok")
+        except IntegrityError:
+            results.append("rejected")
+        finally:
+            session.close()
+
+    threads = [threading.Thread(target=insert_round) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    engine.dispose()
+
+    assert sorted(results) == ["ok", "rejected"]
+
+
 def test_submission_authorization_is_its_own_function_not_a_wrapper_around_access_or_ownership():
     # Strip the docstring so a mention in prose (explaining why it's separate)
     # doesn't get mistaken for a call.

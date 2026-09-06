@@ -189,6 +189,44 @@ def test_cancelled_interview_does_not_reappear_in_interviewer_list(client, db_se
     assert resp.json() == []
 
 
+def test_concurrent_schedule_against_same_round_yields_exactly_one_success(client, db_session):
+    import threading
+
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = User(
+        email="iv6@example.com", password_hash=hash_password("pw"), full_name="Ivy", role=UserRole.interviewer
+    )
+    db_session.add(interviewer)
+    db_session.commit()
+    db_session.refresh(interviewer)
+    candidate, round_ = _make_candidate_with_round(db_session, admin, position, interviewer)
+
+    results = []
+
+    def schedule():
+        try:
+            resp = client.post(
+                "/api/admin/interviews",
+                json={"round_id": round_.id, "scheduled_at": datetime.now(timezone.utc).isoformat()},
+            )
+            results.append(resp.status_code)
+        except Exception:
+            # The second request's IntegrityError is unhandled application-side
+            # (by design — the DB is the enforcement point, not an app-level
+            # check), so it surfaces as an uncaught exception through the test
+            # client rather than a clean 4xx.
+            results.append("error")
+
+    threads = [threading.Thread(target=schedule) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert sorted(results, key=str) == [201, "error"]
+
+
 def test_second_active_interview_for_same_round_rejected_at_db_level(client, db_session):
     import pytest
     from sqlalchemy.exc import IntegrityError
