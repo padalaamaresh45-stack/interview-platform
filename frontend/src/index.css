@@ -706,6 +706,10 @@ code {
   font-size: 13.5px;
 }
 
+.page-header .btn-primary {
+  margin-left: auto;
+}
+
 .page > p[role="alert"] {
   background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
   color: var(--health-stalled);
@@ -807,6 +811,54 @@ code {
 
 .page form > button {
   align-self: flex-end;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100svh - 48px);
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-h);
 }
 
 .page input,

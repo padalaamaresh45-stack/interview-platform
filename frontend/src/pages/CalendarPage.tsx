@@ -10,6 +10,7 @@ import {
 } from "../api/interviews";
 import { listActiveInterviewers, listCandidates, type Candidate, type Interviewer } from "../api/candidates";
 import { browserTimezone, formatDateTimeInZone, zoneAbbreviation } from "../utils/timezone";
+import { Modal } from "../components/Modal";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -56,6 +57,7 @@ export function CalendarPage() {
   const [duration, setDuration] = useState("60");
   const [notes, setNotes] = useState("");
   const [scheduling, setScheduling] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   async function refresh() {
     try {
@@ -112,6 +114,7 @@ export function CalendarPage() {
       setScheduledAt("");
       setDuration("60");
       setNotes("");
+      setModalOpen(false);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -129,6 +132,7 @@ export function CalendarPage() {
       // don't read as unrelated to each other.
       const time = scheduledAt.includes("T") ? scheduledAt.slice(11) : "09:00";
       setScheduledAt(`${key}T${time}`);
+      setModalOpen(true);
     }
   }
 
@@ -168,57 +172,64 @@ export function CalendarPage() {
         <span className="page-header-count">
           {interviews.length} scheduled {isAdmin ? "across all interviewers" : "for you"}
         </span>
+        {isAdmin && (
+          <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>
+            + New Interview
+          </button>
+        )}
       </div>
       {error && <p role="alert">{error}</p>}
 
-      {isAdmin && (
-        <form onSubmit={handleSchedule}>
-          <div className="field">
-            <label htmlFor="cal-candidate">Candidate</label>
-            <select id="cal-candidate" value={candidateId} onChange={(e) => setCandidateId(e.target.value)} required>
-              <option value="" disabled>
-                Select a candidate
-              </option>
-              {candidates.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.full_name}
+      {isAdmin && modalOpen && (
+        <Modal title="Schedule interview" onClose={() => setModalOpen(false)}>
+          <form onSubmit={handleSchedule}>
+            <div className="field">
+              <label htmlFor="cal-candidate">Candidate</label>
+              <select id="cal-candidate" value={candidateId} onChange={(e) => setCandidateId(e.target.value)} required>
+                <option value="" disabled>
+                  Select a candidate
                 </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="cal-when">When</label>
-            <input
-              id="cal-when"
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              required
-            />
-            {assigneeLocalPreview && <p className="field-hint">{assigneeLocalPreview}</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="cal-duration">Duration (min)</label>
-            <input
-              id="cal-duration"
-              type="number"
-              min={15}
-              max={480}
-              step={15}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="cal-notes">Notes (optional)</label>
-            <input id="cal-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-          <p className="field-hint">Tip: click a date on the calendar below to fill in "When" automatically.</p>
-          <button type="submit" disabled={scheduling}>
-            {scheduling ? "Scheduling…" : "Schedule interview"}
-          </button>
-        </form>
+                {candidates.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="cal-when">When</label>
+              <input
+                id="cal-when"
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                required
+              />
+              {assigneeLocalPreview && <p className="field-hint">{assigneeLocalPreview}</p>}
+            </div>
+            <div className="field">
+              <label htmlFor="cal-duration">Duration (min)</label>
+              <input
+                id="cal-duration"
+                type="number"
+                min={15}
+                max={480}
+                step={15}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cal-notes">Notes (optional)</label>
+              <input id="cal-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            <p className="field-hint">Tip: close this and click a date on the calendar to fill in "When" automatically.</p>
+            <button type="submit" disabled={scheduling}>
+              {scheduling ? "Scheduling…" : "Schedule interview"}
+            </button>
+          </form>
+        </Modal>
       )}
 
       <section>

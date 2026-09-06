@@ -1,13 +1,15 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PositionListPage } from "../PositionListPage";
-import { listPositions } from "../../api/positions";
+import { createPosition, listPositions } from "../../api/positions";
 
 vi.mock("../../api/positions");
 
 const mockListPositions = vi.mocked(listPositions);
+const mockCreatePosition = vi.mocked(createPosition);
 
 function renderPage() {
   return render(
@@ -59,5 +61,42 @@ describe("PositionListPage", () => {
     mockListPositions.mockRejectedValue(new Error("Insufficient permissions."));
     renderPage();
     expect(await screen.findByRole("alert")).toHaveTextContent("Insufficient permissions.");
+  });
+
+  it("opens the create form in a modal from the + New Position trigger, and closes it on Escape", async () => {
+    mockListPositions.mockResolvedValue([]);
+    renderPage();
+    await screen.findByText(/No positions yet/);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "+ New Position" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("creates a position from the modal and closes it, refreshing the list", async () => {
+    mockListPositions.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      { id: 1, title: "Backend Engineer", question_count: 0, candidate_count: 0, created_at: "", updated_at: "" },
+    ]);
+    mockCreatePosition.mockResolvedValue({
+      id: 1,
+      title: "Backend Engineer",
+      question_count: 0,
+      candidate_count: 0,
+      created_at: "",
+      updated_at: "",
+    });
+    renderPage();
+    await screen.findByText(/No positions yet/);
+
+    await userEvent.click(screen.getByRole("button", { name: "+ New Position" }));
+    await userEvent.type(screen.getByLabelText("New position title"), "Backend Engineer");
+    await userEvent.click(screen.getByRole("button", { name: "Create position" }));
+
+    expect(mockCreatePosition).toHaveBeenCalledWith("Backend Engineer");
+    await screen.findByText("Backend Engineer");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createCandidate, listActiveInterviewers, listCandidates, type Candidate, type Interviewer } from "../api/candidates";
 import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
+import { Modal } from "../components/Modal";
 
 export function CandidateListPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -22,6 +23,7 @@ export function CandidateListPage() {
   const [newPositionId, setNewPositionId] = useState("");
   const [newInterviewerId, setNewInterviewerId] = useState("");
   const [creating, setCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -58,6 +60,7 @@ export function CandidateListPage() {
       setNewPhone("");
       setNewPositionId("");
       setNewInterviewerId("");
+      setModalOpen(false);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -79,67 +82,74 @@ export function CandidateListPage() {
       <div className="page-header">
         <h1>Candidates</h1>
         <span className="page-header-count">{candidates.length} total</span>
+        <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>
+          + New Candidate
+        </button>
       </div>
       {error && <p role="alert">{error}</p>}
 
-      <form onSubmit={handleCreate}>
-        <div className="field">
-          <label htmlFor="new-candidate-name">Full name</label>
-          <input id="new-candidate-name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
-        </div>
-        <div className="field">
-          <label htmlFor="new-candidate-email">Email (optional)</label>
-          <input
-            id="new-candidate-email"
-            type="email"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-candidate-phone">Phone (optional)</label>
-          <input id="new-candidate-phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="new-candidate-position">Position</label>
-          <select
-            id="new-candidate-position"
-            value={newPositionId}
-            onChange={(e) => setNewPositionId(e.target.value)}
-            required
-          >
-            <option value="" disabled>
-              Select a position
-            </option>
-            {positions.map((position) => (
-              <option key={position.id} value={position.id}>
-                {position.title} ({position.question_count} questions)
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="new-candidate-interviewer">Interviewer</label>
-          <select
-            id="new-candidate-interviewer"
-            value={newInterviewerId}
-            onChange={(e) => setNewInterviewerId(e.target.value)}
-            required
-          >
-            <option value="" disabled>
-              Select an interviewer
-            </option>
-            {interviewers.map((interviewer) => (
-              <option key={interviewer.id} value={interviewer.id}>
-                {interviewer.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" disabled={creating}>
-          {creating ? "Creating…" : "Create candidate"}
-        </button>
-      </form>
+      {modalOpen && (
+        <Modal title="New candidate" onClose={() => setModalOpen(false)}>
+          <form onSubmit={handleCreate}>
+            <div className="field">
+              <label htmlFor="new-candidate-name">Full name</label>
+              <input id="new-candidate-name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
+            </div>
+            <div className="field">
+              <label htmlFor="new-candidate-email">Email (optional)</label>
+              <input
+                id="new-candidate-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="new-candidate-phone">Phone (optional)</label>
+              <input id="new-candidate-phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+            </div>
+            <div className="field">
+              <label htmlFor="new-candidate-position">Position</label>
+              <select
+                id="new-candidate-position"
+                value={newPositionId}
+                onChange={(e) => setNewPositionId(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Select a position
+                </option>
+                {positions.map((position) => (
+                  <option key={position.id} value={position.id}>
+                    {position.title} ({position.question_count} questions)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="new-candidate-interviewer">Interviewer</label>
+              <select
+                id="new-candidate-interviewer"
+                value={newInterviewerId}
+                onChange={(e) => setNewInterviewerId(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Select an interviewer
+                </option>
+                {interviewers.map((interviewer) => (
+                  <option key={interviewer.id} value={interviewer.id}>
+                    {interviewer.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" disabled={creating}>
+              {creating ? "Creating…" : "Create candidate"}
+            </button>
+          </form>
+        </Modal>
+      )}
 
       {loading ? (
         <p>Loading…</p>

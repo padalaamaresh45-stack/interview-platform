@@ -8,6 +8,7 @@ import {
   updateUserName,
   type AdminUser,
 } from "../api/users";
+import { Modal } from "../components/Modal";
 
 export function UserListPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -19,6 +20,7 @@ export function UserListPage() {
   const [newFullName, setNewFullName] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "interviewer">("interviewer");
   const [creating, setCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -48,6 +50,7 @@ export function UserListPage() {
       setNewPassword("");
       setNewFullName("");
       setNewRole("interviewer");
+      setModalOpen(false);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -96,54 +99,61 @@ export function UserListPage() {
       <div className="page-header">
         <h1>Users</h1>
         <span className="page-header-count">{users.length} total</span>
+        <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>
+          + New User
+        </button>
       </div>
       {error && <p role="alert">{error}</p>}
 
-      <form onSubmit={handleCreate}>
-        <div className="field">
-          <label htmlFor="new-user-email">Email</label>
-          <input
-            id="new-user-email"
-            type="email"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-user-password">Initial password</label>
-          <input
-            id="new-user-password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-user-full-name">Full name</label>
-          <input
-            id="new-user-full-name"
-            value={newFullName}
-            onChange={(e) => setNewFullName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-user-role">Role</label>
-          <select
-            id="new-user-role"
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value as "admin" | "interviewer")}
-          >
-            <option value="interviewer">Interviewer</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button type="submit" disabled={creating}>
-          {creating ? "Creating…" : "Create user"}
-        </button>
-      </form>
+      {modalOpen && (
+        <Modal title="New user" onClose={() => setModalOpen(false)}>
+          <form onSubmit={handleCreate}>
+            <div className="field">
+              <label htmlFor="new-user-email">Email</label>
+              <input
+                id="new-user-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="new-user-password">Initial password</label>
+              <input
+                id="new-user-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="new-user-full-name">Full name</label>
+              <input
+                id="new-user-full-name"
+                value={newFullName}
+                onChange={(e) => setNewFullName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="new-user-role">Role</label>
+              <select
+                id="new-user-role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as "admin" | "interviewer")}
+              >
+                <option value="interviewer">Interviewer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button type="submit" disabled={creating}>
+              {creating ? "Creating…" : "Create user"}
+            </button>
+          </form>
+        </Modal>
+      )}
 
       {loading ? (
         <p>Loading…</p>
