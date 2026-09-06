@@ -191,3 +191,7 @@ Seeded via `enumerate(..., start=1)`, so every position gets `Rejected.sequence_
 
 ### 4.5 Other anomalies checked — none found
 No candidates with zero stage-transition rows; no transitions referencing a nonexistent candidate or stage; no duplicate `sequence_order` within a position; no position with zero stages; no candidate with `updated_at < created_at`; no interview score referencing a question belonging to a different position than the candidate. Referential integrity is clean everywhere else — every issue above is a logic or schema-design gap, not a corrupted row.
+
+### Accepted deviations (implementation-status audit, 2026-09-06)
+
+**#16 AC4** (`grep -rn "TERMINAL_STAGE_NAMES" backend frontend` returns zero matches): the grep returns 2 hits, both inside `backend/alembic/versions/c4d8e91f2a3b_add_stage_is_terminal.py` — the one-time migration that backfills `is_terminal`. Accepted as-is: a migration file is historical record of the backfill it performed, not runtime code, and no name-based terminal check remains anywhere `Stage.is_terminal` is actually consulted. Not reworked.
