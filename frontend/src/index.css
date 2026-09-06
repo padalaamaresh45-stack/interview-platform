@@ -1017,6 +1017,17 @@ code {
   background: var(--code-bg);
 }
 
+/* Record-equivalent navigation targets (Positions, InterviewerQueue, and
+   Calendar's day-detail list all link into a row via a nested <Link> since
+   #22 migrated them from .record-card to table rows) need the same designed
+   focus ring as every other custom interactive element (ticket #18) — a
+   plain <a> would otherwise fall back to the unstyled browser default. */
+.page table a:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
 /* ---------- Detail page sections ----------
    A record page (candidate detail, etc.) reads as a sequence of sections —
    header, edit form, pipeline, history — separated by whitespace and a

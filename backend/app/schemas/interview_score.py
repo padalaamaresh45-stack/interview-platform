@@ -38,6 +38,10 @@ class InterviewerCandidateDetail(BaseModel):
     phone: str | None
     position_id: int
     status: CandidateStatus
+    # None when the interviewer's round for this candidate is already
+    # scored/reassigned — a submittability gate (see get_my_candidate), not a
+    # plain identifier. `scores` below can still be populated even when this
+    # is None.
     round_id: int | None
     questions: list[QuestionOut]
     scores: list[InterviewScoreOut]

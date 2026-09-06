@@ -154,6 +154,12 @@ def get_my_candidate(
         phone=candidate.phone,
         position_id=candidate.position_id,
         status=candidate.status,
+        # Deliberately None for a round already in `scored` (or `reassigned`)
+        # status, even though `scores` above is still populated for it: this
+        # field is a submittability gate, not an identifier. The frontend
+        # (InterviewerScorecardPage.tsx) uses `round_id is None` to disable
+        # the submit action — a candidate whose round is already scored has
+        # nothing left to submit, so there is no round_id to submit against.
         round_id=(
             my_round.id
             if my_round is not None and my_round.status in (RoundStatus.open, RoundStatus.closed_unscored)
