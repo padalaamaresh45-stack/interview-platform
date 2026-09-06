@@ -37,6 +37,7 @@ class BoardCandidateOut(BaseModel):
     days_in_stage: int
     health: str | None
     next_action: str
+    gap_state: str | None
     score: ScoreSummaryOut
 
 

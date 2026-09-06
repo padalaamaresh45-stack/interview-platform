@@ -162,6 +162,7 @@ def test_only_one_open_round_survives_concurrent_assign_next_round_calls(db_sess
                 new_stage_id=stage_1,
                 new_assignee_id=interviewer.id,
             )
+            session.commit()
             results.append("ok")
         except Exception as exc:  # noqa: BLE001 - recording any failure mode, not swallowing
             results.append(type(exc).__name__)

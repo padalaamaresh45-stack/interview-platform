@@ -32,6 +32,11 @@ def close_and_open_round(
     `new_assignee_id`. Only closes a round when one is genuinely open — the
     normal path (prior round already `scored`) has nothing to close.
 
+    Flushes but does not commit: the caller controls the transaction boundary
+    so it can add more writes (e.g. ticket #28's optional Interview) to the
+    same atomic commit. Callers that want this as a standalone unit of work
+    must call db.commit() themselves.
+
     Locks the Candidate row for the duration, not the Round row: two
     concurrent calls for a candidate with NO open round yet (first assignment
     race) still have to serialize, and there is no Round row to lock in that
@@ -64,6 +69,5 @@ def close_and_open_round(
         reassigned_from_round_id=reassigned_from_round_id,
     )
     db.add(new_round)
-    db.commit()
-    db.refresh(new_round)
+    db.flush()
     return new_round

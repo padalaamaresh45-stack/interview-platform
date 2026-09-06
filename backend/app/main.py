@@ -12,6 +12,7 @@ from app.routers import (
     interviewer,
     interviews,
     pipeline,
+    rounds,
 )
 
 app = FastAPI(title="Interview Management Portal API")
@@ -35,3 +36,4 @@ app.include_router(interviewer.router)
 app.include_router(interviewer.rounds_router)
 app.include_router(pipeline.router)
 app.include_router(interviews.router)
+app.include_router(rounds.router)

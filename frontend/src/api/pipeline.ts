@@ -26,6 +26,13 @@ export interface BoardCandidate {
   days_in_stage: number;
   health: "on_track" | "stalled" | null;
   next_action: string;
+  gap_state:
+    | "terminal"
+    | "on_hold"
+    | "assigned_but_unscheduled"
+    | "awaiting_assignment"
+    | "awaiting_decision"
+    | null;
   score: ScoreSummary;
 }
 

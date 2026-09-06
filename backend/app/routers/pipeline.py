@@ -5,14 +5,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import require_admin
 from app.database import get_db
 from app.models.candidate import Candidate
+from app.models.interview import Interview, InterviewStatus
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round, RoundStatus
 from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User
 from app.pipeline.access import get_open_rounds
-from app.pipeline.derive import compute_current_owner, derive_candidate_fields
+from app.pipeline.derive import compute_current_owner, compute_gap_state, derive_candidate_fields
 from app.schemas.pipeline import (
     BoardCandidateOut,
     BoardColumnOut,
@@ -76,6 +78,48 @@ def _scores_by_candidate(db: DBSession, candidate_ids: list[int]) -> dict[int, l
     return by_candidate
 
 
+def _round_ids_with_active_interview(db: DBSession, round_ids: list[int]) -> set[int]:
+    if not round_ids:
+        return set()
+    rows = (
+        db.query(Interview.round_id)
+        .filter(Interview.round_id.in_(round_ids), Interview.status != InterviewStatus.cancelled)
+        .all()
+    )
+    return {row[0] for row in rows}
+
+
+def _latest_closed_round_by_candidate(db: DBSession, candidate_ids: list[int]) -> dict[int, Round]:
+    """The most recently closed Round per candidate (any non-open status) —
+    feeds compute_gap_state's "did the last round score, or fall away
+    unscored/reassigned" branch. Ordered by closed_at then id so two rounds
+    closed in the same instant still resolve deterministically."""
+    if not candidate_ids:
+        return {}
+    rows = (
+        db.query(Round)
+        .filter(Round.candidate_id.in_(candidate_ids), Round.status != RoundStatus.open)
+        .order_by(Round.candidate_id, Round.closed_at.desc(), Round.id.desc())
+        .all()
+    )
+    latest: dict[int, Round] = {}
+    for row in rows:
+        latest.setdefault(row.candidate_id, row)
+    return latest
+
+
+def _average_score_by_round(db: DBSession, round_ids: list[int]) -> dict[int, float]:
+    if not round_ids:
+        return {}
+    rows = (
+        db.query(InterviewScore.round_id, func.avg(InterviewScore.score))
+        .filter(InterviewScore.round_id.in_(round_ids))
+        .group_by(InterviewScore.round_id)
+        .all()
+    )
+    return {round_id: float(avg) for round_id, avg in rows}
+
+
 @router.get("/stages", response_model=list[StageOut])
 def list_stages(
     position_id: int,
@@ -111,6 +155,13 @@ def get_board(
     question_counts = _question_counts_by_position(db, list(positions.keys()))
     scores_by_candidate = _scores_by_candidate(db, [c.id for c in candidates])
     open_rounds = get_open_rounds(db, [c.id for c in candidates])
+    active_interview_round_ids = _round_ids_with_active_interview(
+        db, [r.id for r in open_rounds.values()]
+    )
+    latest_closed_round_by_candidate = _latest_closed_round_by_candidate(db, [c.id for c in candidates])
+    average_score_by_round = _average_score_by_round(
+        db, [r.id for r in latest_closed_round_by_candidate.values()]
+    )
 
     columns: dict[int, list[BoardCandidateOut]] = {stage.id: [] for stage in stages}
     for candidate in candidates:
@@ -133,6 +184,21 @@ def get_board(
             total_questions=question_counts.get(candidate.position_id, 0),
         )
         position = positions.get(candidate.position_id)
+        open_round = open_rounds.get(candidate.id)
+        latest_closed_round = latest_closed_round_by_candidate.get(candidate.id)
+        gap_state = compute_gap_state(
+            is_terminal=stage.is_terminal,
+            hold_reason=candidate.hold_reason,
+            has_open_round=open_round is not None,
+            open_round_has_active_interview=(
+                open_round is not None and open_round.id in active_interview_round_ids
+            ),
+            latest_closed_round_status=latest_closed_round.status if latest_closed_round else None,
+            latest_round_average_score=(
+                average_score_by_round.get(latest_closed_round.id) if latest_closed_round else None
+            ),
+            advance_threshold=stage.advance_threshold,
+        )
         columns.setdefault(stage.id, []).append(
             BoardCandidateOut(
                 id=candidate.id,
@@ -145,6 +211,7 @@ def get_board(
                 days_in_stage=derived.days_in_stage,
                 health=derived.health,
                 next_action=derived.next_action,
+                gap_state=gap_state,
                 score=ScoreSummaryOut(
                     submitted_count=derived.score.submitted_count,
                     total_count=derived.score.total_count,

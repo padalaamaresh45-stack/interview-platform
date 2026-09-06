@@ -144,6 +144,10 @@ function PipelineBoard() {
     (sum, c) => sum + c.candidates.filter((cand) => cand.health === "stalled").length,
     0,
   );
+  const unscheduledCount = board.columns.reduce(
+    (sum, c) => sum + c.candidates.filter((cand) => cand.gap_state === "assigned_but_unscheduled").length,
+    0,
+  );
   const currentPosition = positions.find((p) => String(p.id) === positionFilter);
 
   return (
@@ -152,6 +156,8 @@ function PipelineBoard() {
         <h1>Candidate pipeline</h1>
         <span className="muted">
           {totalCandidates} candidates{currentPosition ? ` — ${currentPosition.title}` : ""} · {stalledCount} stalled
+          {" · "}
+          {unscheduledCount} assigned but unscheduled
         </span>
       </div>
 
@@ -256,6 +262,9 @@ function PipelineBoard() {
                         {candidate.days_in_stage}d
                       </span>
                     </div>
+                    {candidate.gap_state === "assigned_but_unscheduled" && (
+                      <span className="health-pill stalled">Assigned, unscheduled</span>
+                    )}
                     <div className="pipeline-card-name">{candidate.full_name}</div>
                     <div className="muted">{candidate.position_title}</div>
                     <div className={`pipeline-card-next-action ${candidate.health === "stalled" ? "danger" : ""}`}>
