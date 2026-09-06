@@ -84,7 +84,10 @@ export function CalendarPage() {
   let assigneeLocalPreview: string | null = null;
   if (assignee?.timezone && scheduledAt) {
     const iso = new Date(scheduledAt).toISOString();
-    const adminZone = browserTimezone();
+    // The admin's own half of the preview uses their profile timezone too,
+    // not raw browser inference — same "stable working zone while traveling"
+    // reasoning the assignee side already gets (ticket #29).
+    const adminZone = user?.timezone ?? browserTimezone();
     const adminLabel = `${formatDateTimeInZone(iso, adminZone)} ${zoneAbbreviation(iso, adminZone)}`;
     const assigneeLabel = `${formatDateTimeInZone(iso, assignee.timezone)} ${zoneAbbreviation(iso, assignee.timezone)}`;
     assigneeLocalPreview = `${adminLabel} · ${assigneeLabel} for ${assignee.full_name}`;
