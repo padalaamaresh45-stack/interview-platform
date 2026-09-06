@@ -81,6 +81,27 @@ export interface CandidateHistory {
   scores: InterviewScore[];
 }
 
+export interface RoundConsolidation {
+  id: number;
+  stage_id: number;
+  stage_name: string;
+  assignee_id: number;
+  assignee_name: string;
+  status: "open" | "scored" | "reassigned" | "closed_unscored";
+  created_at: string;
+  closed_at: string | null;
+  average_score: number | null;
+  scores: InterviewScore[];
+}
+
+export interface Consolidation {
+  candidate_id: number;
+  rounds: RoundConsolidation[];
+  average_score: number | null;
+  variance: number | null;
+  split_decision: boolean;
+}
+
 async function parseOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -100,6 +121,10 @@ export async function listStages(positionId: number): Promise<Stage[]> {
 
 export async function getCandidateHistory(candidateId: number): Promise<CandidateHistory> {
   return parseOrThrow(await apiFetch(`/api/pipeline/candidates/${candidateId}`));
+}
+
+export async function getConsolidation(candidateId: number): Promise<Consolidation> {
+  return parseOrThrow(await apiFetch(`/api/pipeline/candidates/${candidateId}/consolidation`));
 }
 
 // Thrown when the server refuses a move because the candidate is currently

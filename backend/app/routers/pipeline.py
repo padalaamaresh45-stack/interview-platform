@@ -14,13 +14,21 @@ from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User
 from app.pipeline.access import get_open_rounds
-from app.pipeline.derive import compute_current_owner, compute_gap_state, derive_candidate_fields
+from app.pipeline.derive import (
+    compute_current_owner,
+    compute_gap_state,
+    compute_score_variance,
+    derive_candidate_fields,
+    is_split_decision,
+)
 from app.schemas.pipeline import (
     BoardCandidateOut,
     BoardColumnOut,
     BoardOut,
     CandidateHistoryOut,
+    ConsolidationOut,
     MoveCandidateRequest,
+    RoundConsolidationOut,
     ScoreSummaryOut,
     StageOut,
     StageTransitionOut,
@@ -304,6 +312,73 @@ def get_candidate_history(
 ):
     candidate = _get_candidate_or_404(db, candidate_id)
     return _build_candidate_history(db, candidate)
+
+
+@router.get("/candidates/{candidate_id}/consolidation", response_model=ConsolidationOut)
+def get_candidate_consolidation(
+    candidate_id: int,
+    db: DBSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    """Every Round for a candidate, in chronological order, with the shared
+    variance/split-decision calculation from #27 — admin-only, by construction
+    (this whole router requires require_admin), so it never leaks another
+    round's score to the interviewer who owns it. That blind-review guarantee
+    for interviewer-facing endpoints lives separately, scoped to each
+    interviewer's own Round, in app.routers.interviewer."""
+    candidate = _get_candidate_or_404(db, candidate_id)
+
+    rounds = (
+        db.query(Round)
+        .filter(Round.candidate_id == candidate.id)
+        .order_by(Round.created_at, Round.id)
+        .all()
+    )
+    if not rounds:
+        return ConsolidationOut(
+            candidate_id=candidate.id, rounds=[], average_score=None, variance=None, split_decision=False
+        )
+
+    round_ids = [r.id for r in rounds]
+    stages = {s.id: s for s in db.query(Stage).filter(Stage.id.in_({r.stage_id for r in rounds})).all()}
+    assignees = {u.id: u for u in db.query(User).filter(User.id.in_({r.assignee_id for r in rounds})).all()}
+    average_by_round = _average_score_by_round(db, round_ids)
+    scores_rows = db.query(InterviewScore).filter(InterviewScore.round_id.in_(round_ids)).order_by(InterviewScore.id).all()
+    scores_by_round: dict[int, list[InterviewScore]] = {}
+    for s in scores_rows:
+        scores_by_round.setdefault(s.round_id, []).append(s)
+
+    round_outs = []
+    scored_averages = []
+    for r in rounds:
+        stage = stages.get(r.stage_id)
+        assignee = assignees.get(r.assignee_id)
+        avg = average_by_round.get(r.id)
+        if r.status == RoundStatus.scored and avg is not None:
+            scored_averages.append(avg)
+        round_outs.append(
+            RoundConsolidationOut(
+                id=r.id,
+                stage_id=r.stage_id,
+                stage_name=stage.name if stage else f"#{r.stage_id}",
+                assignee_id=r.assignee_id,
+                assignee_name=assignee.full_name if assignee else f"#{r.assignee_id}",
+                status=r.status,
+                created_at=r.created_at,
+                closed_at=r.closed_at,
+                average_score=avg if r.status == RoundStatus.scored else None,
+                scores=scores_by_round.get(r.id, []),
+            )
+        )
+
+    average_score = round(sum(scored_averages) / len(scored_averages), 2) if scored_averages else None
+    return ConsolidationOut(
+        candidate_id=candidate.id,
+        rounds=round_outs,
+        average_score=average_score,
+        variance=compute_score_variance(scored_averages),
+        split_decision=is_split_decision(scored_averages),
+    )
 
 
 @router.post("/candidates/{candidate_id}/move", response_model=CandidateHistoryOut)

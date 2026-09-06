@@ -5,10 +5,12 @@ import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
 import {
   getCandidateHistory,
+  getConsolidation,
   listStages,
   moveCandidate,
   TerminalStageMoveError,
   type CandidateHistory,
+  type Consolidation,
   type Stage,
 } from "../api/pipeline";
 import { listAllInterviews, type Interview } from "../api/interviews";
@@ -39,6 +41,13 @@ export function CandidateDetailPage() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [moveTargetStageId, setMoveTargetStageId] = useState("");
+
+  // The consolidation view (every round, in order, with the shared
+  // variance/split-decision calculation) is admin-only and separate from the
+  // single-round-per-interviewer scorecard flow — fetched independently so a
+  // hiccup here doesn't block the rest of the page either.
+  const [consolidation, setConsolidation] = useState<Consolidation | null>(null);
+  const [consolidationError, setConsolidationError] = useState<string | null>(null);
 
   // Scheduled interviews for this candidate — a separate, independently-
   // failing fetch for the same reason history is: a calendar hiccup
@@ -87,6 +96,12 @@ export function CandidateDetailPage() {
     listAllInterviews()
       .then((all) => setInterviews(all.filter((i) => i.candidate_id === id)))
       .catch(() => setInterviews([]));
+    getConsolidation(id)
+      .then((data) => {
+        setConsolidation(data);
+        setConsolidationError(null);
+      })
+      .catch((err) => setConsolidationError(err instanceof Error ? err.message : "Could not load round history."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -366,22 +381,57 @@ export function CandidateDetailPage() {
         </section>
       )}
 
-      {history && (
-        <section>
-          <h2>Scores</h2>
-          {history.scores.length === 0 ? (
-            <p className="detail-meta">No scores submitted yet.</p>
-          ) : (
-            <ul className="history-list score-history-list">
-              {history.scores.map((s) => (
-                <li key={s.id}>
-                  Question #{s.question_id}: {s.score}/5{s.comment ? ` — ${s.comment}` : ""}
+      <section>
+        <h2>Rounds</h2>
+        {consolidationError && <p role="alert">{consolidationError}</p>}
+        {consolidation === null ? (
+          !consolidationError && <p className="detail-meta">Loading rounds…</p>
+        ) : consolidation.rounds.length === 0 ? (
+          <p className="detail-meta">No rounds yet.</p>
+        ) : (
+          <div className="panel">
+            <div className="stat-row">
+              <div className="stat">
+                <span className="stat-label">Average across scored rounds</span>
+                <span className="stat-value">
+                  {consolidation.average_score !== null ? consolidation.average_score : "—"}
+                </span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Variance</span>
+                <span className="stat-value">
+                  {consolidation.variance !== null ? consolidation.variance : "—"}
+                  {consolidation.split_decision && <span className="status-pill danger"> Split decision</span>}
+                </span>
+              </div>
+            </div>
+            <ul className="history-list round-consolidation-list">
+              {consolidation.rounds.map((r) => (
+                <li key={r.id}>
+                  <strong>{r.stage_name}</strong> — {r.assignee_name} ·{" "}
+                  <span className="muted">{r.status.replace("_", " ")}</span>
+                  <br />
+                  <span className="history-when">
+                    {new Date(r.created_at).toLocaleDateString()}
+                    {r.closed_at ? ` – ${new Date(r.closed_at).toLocaleDateString()}` : ""}
+                  </span>
+                  {" · "}
+                  {r.average_score !== null ? `${r.average_score} avg` : "no score"}
+                  {r.scores.length > 0 && (
+                    <ul className="history-list score-history-list">
+                      {r.scores.map((s) => (
+                        <li key={s.id}>
+                          Question #{s.question_id}: {s.score}/5{s.comment ? ` — ${s.comment}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-      )}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

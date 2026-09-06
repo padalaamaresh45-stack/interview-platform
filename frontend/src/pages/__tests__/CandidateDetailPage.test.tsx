@@ -6,7 +6,7 @@ import { CandidateDetailPage } from "../CandidateDetailPage";
 import { getCandidate, reassignRound, updateCandidate } from "../../api/candidates";
 import { listPositions } from "../../api/positions";
 import { listUsers } from "../../api/users";
-import { getCandidateHistory, listStages } from "../../api/pipeline";
+import { getCandidateHistory, getConsolidation, listStages } from "../../api/pipeline";
 import { listAllInterviews } from "../../api/interviews";
 
 vi.mock("../../api/candidates");
@@ -21,6 +21,7 @@ const mockReassignRound = vi.mocked(reassignRound);
 const mockListPositions = vi.mocked(listPositions);
 const mockListUsers = vi.mocked(listUsers);
 const mockGetCandidateHistory = vi.mocked(getCandidateHistory);
+const mockGetConsolidation = vi.mocked(getConsolidation);
 const mockListStages = vi.mocked(listStages);
 const mockListAllInterviews = vi.mocked(listAllInterviews);
 
@@ -61,6 +62,7 @@ describe("CandidateDetailPage", () => {
   it("shows the current owner as read-only text, even if since deactivated", async () => {
     mockListAllInterviews.mockResolvedValue([]);
     mockGetCandidateHistory.mockRejectedValue(new Error("Could not load pipeline history."));
+    mockGetConsolidation.mockRejectedValue(new Error("Could not load round history."));
     mockGetCandidate.mockResolvedValue(candidate);
     mockListPositions.mockResolvedValue([
       { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
@@ -107,6 +109,7 @@ describe("CandidateDetailPage", () => {
   it("reassigns the open round's interviewer via the reassign endpoint", async () => {
     mockListAllInterviews.mockResolvedValue([]);
     mockGetCandidateHistory.mockRejectedValue(new Error("Could not load pipeline history."));
+    mockGetConsolidation.mockRejectedValue(new Error("Could not load round history."));
     mockGetCandidate.mockResolvedValue(candidate);
     mockListPositions.mockResolvedValue([
       { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
@@ -176,6 +179,26 @@ describe("CandidateDetailPage", () => {
       ],
       scores: [{ id: 1, candidate_id: CANDIDATE_ID, question_id: 1, score: 4, comment: null, created_at: "" }],
     });
+    mockGetConsolidation.mockResolvedValue({
+      candidate_id: CANDIDATE_ID,
+      rounds: [
+        {
+          id: 1,
+          stage_id: 1,
+          stage_name: "Screen",
+          assignee_id: 2,
+          assignee_name: "Andy Active",
+          status: "scored",
+          created_at: "2026-01-01T00:00:00Z",
+          closed_at: "2026-01-02T00:00:00Z",
+          average_score: 4,
+          scores: [{ id: 1, candidate_id: CANDIDATE_ID, question_id: 1, score: 4, comment: null, created_at: "" }],
+        },
+      ],
+      average_score: 4,
+      variance: null,
+      split_decision: false,
+    });
     mockListStages.mockResolvedValue([
       { id: 1, position_id: 1, name: "Screen", sequence_order: 1, day_limit: null, is_terminal: false },
     ]);
@@ -200,21 +223,21 @@ describe("CandidateDetailPage", () => {
   it("gives the interview list its own class, not the shared history-list default", async () => {
     mockHistoryData();
     const { container } = renderPage();
-    await screen.findByRole("heading", { name: "Scores" });
+    await screen.findByRole("heading", { name: "Rounds" });
     expect(container.querySelector("ul.interview-history-list")).not.toBeNull();
   });
 
   it("gives the stage-history list its own class, not the shared history-list default", async () => {
     mockHistoryData();
     const { container } = renderPage();
-    await screen.findByRole("heading", { name: "Scores" });
+    await screen.findByRole("heading", { name: "Rounds" });
     expect(container.querySelector("ul.stage-history-list")).not.toBeNull();
   });
 
   it("gives the score list its own class, not the shared history-list default", async () => {
     mockHistoryData();
     const { container } = renderPage();
-    await screen.findByRole("heading", { name: "Scores" });
+    await screen.findByRole("heading", { name: "Rounds" });
     expect(container.querySelector("ul.score-history-list")).not.toBeNull();
   });
 });
