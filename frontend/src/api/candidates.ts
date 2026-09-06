@@ -70,6 +70,15 @@ export async function updateCandidate(
   );
 }
 
+export async function reassignRound(candidateId: number, assigneeId: number): Promise<void> {
+  await parseOrThrow(
+    await apiFetch(`/api/admin/candidates/${candidateId}/rounds/reassign`, {
+      method: "POST",
+      body: JSON.stringify({ assignee_id: assigneeId }),
+    }),
+  );
+}
+
 export async function deleteCandidate(id: number): Promise<void> {
   const res = await apiFetch(`/api/admin/candidates/${id}`, { method: "DELETE" });
   if (!res.ok) {

@@ -1,9 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CandidateDetailPage } from "../CandidateDetailPage";
-import { getCandidate, updateCandidate } from "../../api/candidates";
+import { getCandidate, reassignRound, updateCandidate } from "../../api/candidates";
 import { listPositions } from "../../api/positions";
 import { listUsers } from "../../api/users";
 import { getCandidateHistory, listStages } from "../../api/pipeline";
@@ -17,6 +17,7 @@ vi.mock("../../api/interviews");
 
 const mockGetCandidate = vi.mocked(getCandidate);
 const mockUpdateCandidate = vi.mocked(updateCandidate);
+const mockReassignRound = vi.mocked(reassignRound);
 const mockListPositions = vi.mocked(listPositions);
 const mockListUsers = vi.mocked(listUsers);
 const mockGetCandidateHistory = vi.mocked(getCandidateHistory);
@@ -87,11 +88,12 @@ describe("CandidateDetailPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("Ivy Deactivated")).toBeInTheDocument();
+    expect((await screen.findAllByText("Ivy Deactivated")).length).toBeGreaterThan(0);
     expect(screen.queryByRole("combobox", { name: "Interviewer" })).not.toBeInTheDocument();
 
-    // Saving must never send an owner/interviewer reassignment field — that
-    // capability doesn't exist yet (see ticket #26/#30).
+    // Saving must never send an owner/interviewer reassignment field —
+    // reassignment goes through its own endpoint (ticket #30), not the
+    // candidate PATCH form.
     const form = screen.getByRole("button", { name: "Save" }).closest("form");
     expect(form).not.toBeNull();
     // eslint-disable-next-line testing-library/no-node-access
@@ -100,6 +102,46 @@ describe("CandidateDetailPage", () => {
     const [, updates] = mockUpdateCandidate.mock.calls[0];
     expect(updates).not.toHaveProperty("interviewer_id");
     expect(updates).not.toHaveProperty("owner_id");
+  });
+
+  it("reassigns the open round's interviewer via the reassign endpoint", async () => {
+    mockListAllInterviews.mockResolvedValue([]);
+    mockGetCandidateHistory.mockRejectedValue(new Error("Could not load pipeline history."));
+    mockGetCandidate.mockResolvedValue(candidate);
+    mockListPositions.mockResolvedValue([
+      { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
+    ]);
+    mockListUsers.mockResolvedValue([
+      {
+        id: DEACTIVATED_INTERVIEWER_ID,
+        email: "deactivated@example.com",
+        full_name: "Ivy Deactivated",
+        role: "interviewer",
+        is_active: false,
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: 2,
+        email: "active@example.com",
+        full_name: "Andy Active",
+        role: "interviewer",
+        is_active: true,
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+    mockReassignRound.mockResolvedValue(undefined);
+
+    renderPage();
+
+    const select = await screen.findByLabelText("Reassign interviewer");
+    fireEvent.change(select, { target: { value: "2" } });
+
+    const reassignButton = screen.getByRole("button", { name: "Reassign" });
+    fireEvent.click(reassignButton);
+
+    await vi.waitFor(() => expect(mockReassignRound).toHaveBeenCalledWith(CANDIDATE_ID, 2));
   });
 
   function mockHistoryData() {

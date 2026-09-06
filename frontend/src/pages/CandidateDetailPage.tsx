@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteCandidate, getCandidate, updateCandidate, type Candidate } from "../api/candidates";
+import { deleteCandidate, getCandidate, reassignRound, updateCandidate, type Candidate } from "../api/candidates";
 import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
 import {
@@ -45,6 +45,9 @@ export function CandidateDetailPage() {
   // shouldn't block the rest of the profile from rendering.
   const [interviews, setInterviews] = useState<Interview[] | null>(null);
 
+  const [reassignTargetId, setReassignTargetId] = useState("");
+  const [reassignError, setReassignError] = useState<string | null>(null);
+
   async function refresh() {
     try {
       const [candidateData, positionList, userList] = await Promise.all([
@@ -58,6 +61,7 @@ export function CandidateDetailPage() {
       setFullName(candidateData.full_name);
       setEmail(candidateData.email ?? "");
       setPhone(candidateData.phone ?? "");
+      setReassignTargetId(candidateData.owner_id ? String(candidateData.owner_id) : "");
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -126,6 +130,18 @@ export function CandidateDetailPage() {
     }
   }
 
+  async function handleReassign(e: FormEvent) {
+    e.preventDefault();
+    if (candidate === null || !reassignTargetId) return;
+    try {
+      await reassignRound(id, Number(reassignTargetId));
+      setReassignError(null);
+      await refresh();
+    } catch (err) {
+      setReassignError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
   async function handleDelete() {
     try {
       await deleteCandidate(id);
@@ -187,7 +203,30 @@ export function CandidateDetailPage() {
             </div>
             <button type="submit">Save</button>
           </form>
-          <p className="detail-meta">Reassigning the interviewer isn't available yet.</p>
+          {candidate.open_round_id !== null ? (
+            <form onSubmit={handleReassign}>
+              <div className="field">
+                <label htmlFor="reassign-interviewer">Reassign interviewer</label>
+                <select
+                  id="reassign-interviewer"
+                  value={reassignTargetId}
+                  onChange={(e) => setReassignTargetId(e.target.value)}
+                >
+                  {interviewers.map((iv) => (
+                    <option key={iv.id} value={iv.id}>
+                      {iv.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" disabled={Number(reassignTargetId) === candidate.owner_id}>
+                Reassign
+              </button>
+            </form>
+          ) : (
+            <p className="detail-meta">No open round to reassign.</p>
+          )}
+          {reassignError && <p role="alert">{reassignError}</p>}
 
           <div className="panel-danger-zone">
             {canChangeAssignment ? (

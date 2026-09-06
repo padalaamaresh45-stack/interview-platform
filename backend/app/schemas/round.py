@@ -19,6 +19,14 @@ class RoundAssignRequest(BaseModel):
     notes: str | None = None
 
 
+class ReassignRequest(BaseModel):
+    """Reassign the candidate's open round to a different interviewer, same
+    stage. See `close_and_open_round`'s `prior_round_closed_status="reassigned"`
+    call in the reassign endpoint (ticket #30)."""
+
+    assignee_id: int
+
+
 class RoundOut(BaseModel):
     id: int
     candidate_id: int

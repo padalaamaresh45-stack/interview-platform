@@ -169,6 +169,102 @@ def test_cancel_returns_round_to_assigned_but_unscheduled_not_closed(client, db_
     assert matched["gap_state"] == "assigned_but_unscheduled"
 
 
+def test_reassign_closes_old_round_and_opens_new_via_shared_helper(client, db_session, monkeypatch):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = _make_interviewer(db_session)
+    other_interviewer = _make_interviewer(db_session, email="other@example.com")
+    candidate = _make_candidate(db_session, admin, position)
+    stage_id = _stage_ids(db_session, position)[0]
+
+    assign_resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds",
+        json={"stage_id": stage_id, "assignee_id": interviewer.id},
+    )
+    old_round_id = assign_resp.json()["id"]
+
+    calls = []
+    import app.routers.rounds as rounds_module
+
+    original = rounds_module.close_and_open_round
+
+    def _spy(*args, **kwargs):
+        calls.append(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(rounds_module, "close_and_open_round", _spy)
+
+    resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds/reassign",
+        json={"assignee_id": other_interviewer.id},
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["assignee_id"] == other_interviewer.id
+    assert body["stage_id"] == stage_id
+    assert body["reassigned_from_round_id"] == old_round_id
+
+    assert len(calls) == 1
+    assert calls[0]["prior_round_closed_status"] == RoundStatus.reassigned
+
+    old_round = db_session.get(Round, old_round_id)
+    db_session.refresh(old_round)
+    assert old_round.status == RoundStatus.reassigned
+    assert old_round.closed_at is not None
+
+
+def test_reassign_does_not_touch_scheduled_interview(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = _make_interviewer(db_session)
+    other_interviewer = _make_interviewer(db_session, email="other@example.com")
+    candidate = _make_candidate(db_session, admin, position)
+    stage_id = _stage_ids(db_session, position)[0]
+
+    assign_resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds",
+        json={
+            "stage_id": stage_id,
+            "assignee_id": interviewer.id,
+            "scheduled_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    interview_id = assign_resp.json()["interview_id"]
+
+    resp = client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds/reassign",
+        json={"assignee_id": other_interviewer.id},
+    )
+    assert resp.status_code == 201
+
+    interview = db_session.get(Interview, interview_id)
+    db_session.refresh(interview)
+    assert interview.status == InterviewStatus.scheduled
+    assert interview.scheduled_at is not None
+
+
+def test_reassign_updates_ownership_immediately(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = _make_interviewer(db_session)
+    other_interviewer = _make_interviewer(db_session, email="other@example.com")
+    candidate = _make_candidate(db_session, admin, position)
+    stage_id = _stage_ids(db_session, position)[0]
+
+    client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds",
+        json={"stage_id": stage_id, "assignee_id": interviewer.id},
+    )
+    client.post(
+        f"/api/admin/candidates/{candidate.id}/rounds/reassign",
+        json={"assignee_id": other_interviewer.id},
+    )
+
+    resp = client.get(f"/api/admin/candidates/{candidate.id}")
+    assert resp.status_code == 200
+    assert resp.json()["owner_id"] == other_interviewer.id
+
+
 def test_reschedule_after_cancel_succeeds(client, db_session):
     admin = _admin_client(client, db_session)
     position = _make_position(db_session, admin)
