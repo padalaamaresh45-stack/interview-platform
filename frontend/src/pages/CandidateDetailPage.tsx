@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  assignRound,
   deleteCandidate,
   getCandidate,
   holdCandidate,
@@ -8,6 +9,7 @@ import {
   updateCandidate,
   type Candidate,
 } from "../api/candidates";
+import { Modal } from "../components/Modal";
 import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
 import {
@@ -69,6 +71,19 @@ export function CandidateDetailPage() {
   const [holdReviewBy, setHoldReviewBy] = useState("");
   const [holdInterviewAction, setHoldInterviewAction] = useState<"keep" | "cancel" | "">("");
   const [holdError, setHoldError] = useState<string | null>(null);
+
+  // Advancing to a new round with a new assignee — one action, one call to
+  // POST /candidates/{id}/rounds (#27's close_and_open_round underneath), so
+  // the stage move and the round it needs can never be submitted separately
+  // and drift apart. No inline scheduling here — the calendar page handles
+  // that against the round this creates.
+  const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
+  const [advanceStageId, setAdvanceStageId] = useState("");
+  const [advanceAssigneeId, setAdvanceAssigneeId] = useState("");
+  const [advanceBrief, setAdvanceBrief] = useState("");
+  const [advanceDueDate, setAdvanceDueDate] = useState("");
+  const [advancing, setAdvancing] = useState(false);
+  const [advanceError, setAdvanceError] = useState<string | null>(null);
 
   async function refresh() {
     try {
@@ -174,6 +189,46 @@ export function CandidateDetailPage() {
       await refresh();
     } catch (err) {
       setReassignError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
+  function openAdvanceModal() {
+    // Default the stage picker to whatever isn't the candidate's current
+    // stage, so submitting without touching the select doesn't silently
+    // no-op against the same stage.
+    const nextStage = stages.find((s) => s.id !== history?.current_stage_id);
+    setAdvanceStageId(nextStage ? String(nextStage.id) : "");
+    setAdvanceAssigneeId("");
+    setAdvanceBrief("");
+    setAdvanceDueDate("");
+    setAdvanceError(null);
+    setAdvanceModalOpen(true);
+  }
+
+  async function handleAdvance(e: FormEvent) {
+    e.preventDefault();
+    if (!advanceStageId || !advanceAssigneeId) return;
+    setAdvancing(true);
+    try {
+      await assignRound(id, {
+        stage_id: Number(advanceStageId),
+        assignee_id: Number(advanceAssigneeId),
+        brief: advanceBrief || null,
+        assignment_due_at: advanceDueDate ? new Date(advanceDueDate).toISOString() : null,
+      });
+      setAdvanceModalOpen(false);
+      await refresh();
+      await refreshHistory();
+      await getConsolidation(id)
+        .then((data) => {
+          setConsolidation(data);
+          setConsolidationError(null);
+        })
+        .catch((err) => setConsolidationError(err instanceof Error ? err.message : "Could not load round history."));
+    } catch (err) {
+      setAdvanceError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setAdvancing(false);
     }
   }
 
@@ -437,9 +492,77 @@ export function CandidateDetailPage() {
               </div>
               <button type="submit">Move</button>
             </form>
+
+            <button type="button" className="btn-secondary" onClick={openAdvanceModal}>
+              + Advance with new assignee
+            </button>
           </div>
         )}
       </section>
+
+      {advanceModalOpen && (
+        <Modal title="Advance to a new round" onClose={() => setAdvanceModalOpen(false)}>
+          <form onSubmit={handleAdvance}>
+            {advanceError && <p role="alert">{advanceError}</p>}
+            <div className="field">
+              <label htmlFor="advance-stage">Next stage</label>
+              <select
+                id="advance-stage"
+                value={advanceStageId}
+                onChange={(e) => setAdvanceStageId(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Select a stage
+                </option>
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="advance-assignee">Assignee</label>
+              <select
+                id="advance-assignee"
+                value={advanceAssigneeId}
+                onChange={(e) => setAdvanceAssigneeId(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Select an interviewer
+                </option>
+                {interviewers.map((iv) => (
+                  <option key={iv.id} value={iv.id}>
+                    {iv.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="advance-brief">Brief (optional)</label>
+              <textarea
+                id="advance-brief"
+                value={advanceBrief}
+                onChange={(e) => setAdvanceBrief(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="advance-due-date">Assignment due (optional)</label>
+              <input
+                id="advance-due-date"
+                type="date"
+                value={advanceDueDate}
+                onChange={(e) => setAdvanceDueDate(e.target.value)}
+              />
+            </div>
+            <button type="submit" disabled={advancing}>
+              {advancing ? "Advancing…" : "Advance candidate"}
+            </button>
+          </form>
+        </Modal>
+      )}
 
       {interviews && (
         <section>

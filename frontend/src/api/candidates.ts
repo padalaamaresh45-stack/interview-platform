@@ -94,6 +94,24 @@ export async function reassignRound(candidateId: number, assigneeId: number): Pr
   );
 }
 
+export interface AssignRoundPayload {
+  stage_id: number;
+  assignee_id: number;
+  brief?: string | null;
+  assignment_due_at?: string | null;
+}
+
+// Scheduling is deliberately not part of this payload — the calendar page
+// handles that as its own step, against the round this creates.
+export async function assignRound(candidateId: number, payload: AssignRoundPayload): Promise<void> {
+  await parseOrThrow(
+    await apiFetch(`/api/admin/candidates/${candidateId}/rounds`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
 export async function deleteCandidate(id: number): Promise<void> {
   const res = await apiFetch(`/api/admin/candidates/${id}`, { method: "DELETE" });
   if (!res.ok) {

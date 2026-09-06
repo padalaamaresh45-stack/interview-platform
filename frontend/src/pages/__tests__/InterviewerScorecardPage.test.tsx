@@ -132,10 +132,11 @@ describe("InterviewerScorecardPage", () => {
     expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
   });
 
-  it("shows a completed candidate's scores read-only with no form", async () => {
+  it("shows a scored round read-only with no form (round_id null)", async () => {
     mockGetMyCandidate.mockResolvedValue({
       ...notStartedCandidate,
       status: "completed",
+      round_id: null,
       scores: [
         { id: 1, candidate_id: CANDIDATE_ID, question_id: 1, score: 4, comment: "Good", created_at: "" },
         { id: 2, candidate_id: CANDIDATE_ID, question_id: 2, score: 5, comment: null, created_at: "" },
@@ -146,5 +147,22 @@ describe("InterviewerScorecardPage", () => {
     expect(await screen.findByText(/already been scored/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit scores" })).not.toBeInTheDocument();
     expect(screen.getByText(/Question one\?.*score: 4/)).toBeInTheDocument();
+  });
+
+  it("shows the submittable form for a re-interview round, even though the candidate's overall status is already completed", async () => {
+    // The exact bug this test guards against: an interviewer assigned a fresh
+    // round on a candidate who was already scored on an earlier round (their
+    // overall `status` stays "completed" from that earlier round) must still
+    // be able to submit — gated on round_id, not status.
+    mockGetMyCandidate.mockResolvedValue({
+      ...notStartedCandidate,
+      status: "completed",
+      round_id: ROUND_ID,
+      scores: [],
+    });
+    renderScorecard();
+
+    expect(await screen.findByRole("button", { name: "Submit scores" })).toBeInTheDocument();
+    expect(screen.queryByText(/already been scored/i)).not.toBeInTheDocument();
   });
 });

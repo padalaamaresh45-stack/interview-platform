@@ -52,7 +52,7 @@ export function InterviewerScorecardPage() {
     getMyCandidate(id)
       .then((data) => {
         setCandidate(data);
-        if (data.status === "not_started") {
+        if (data.round_id !== null) {
           setDraft(loadDraft(id));
         }
       })
@@ -97,7 +97,7 @@ export function InterviewerScorecardPage() {
     );
   }
 
-  if (candidate.status === "completed") {
+  if (candidate.round_id === null) {
     return (
       <main className="page">
         <p>
