@@ -1049,6 +1049,12 @@ code {
   color: var(--text-h);
 }
 
+/* Shared bordered-row look for a candidate's interview list, stage-history
+   list, and score list — three unrelated data types that happen to look
+   alike. Each keeps its own class (interview-history-list,
+   stage-history-list, score-history-list) on top of the shared base, so
+   none of them implicitly stands in as "the" history list for the other
+   two. */
 .history-list {
   list-style: none;
   margin: 0;
@@ -1144,85 +1150,6 @@ code {
 .page button.btn-danger:hover {
   background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
   border-color: var(--health-stalled);
-}
-
-/* ---------- Card grid ----------
-   For a page listing few, simple records (Positions: a title + a count) —
-   a card grid reads cleaner than a table with only two sparse columns.
-   Dense multi-column data (Users, Candidates) keeps the table, where
-   column alignment genuinely helps scanning. */
-/* auto-fill + a capped (not 1fr) max keeps cards a fixed, content-sized
-   width — with 1fr, a wide viewport stretched every short "name + one
-   pill" card into an oversized box with the pill stranded far from the
-   name it describes. Left-over row space is now a gap, not a stretch. */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
-  gap: 14px;
-}
-
-.record-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.record-card:hover {
-  border-color: var(--text-muted);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* Positions render their record-card as a <Link>, which .page a would
-   otherwise underline like an inline text link — override that here since
-   the whole card is the click target, not a piece of running text. */
-.page a.record-card {
-  border-bottom: none;
-  padding-bottom: 0;
-  text-decoration: none;
-  font-weight: normal;
-}
-
-.page a.record-card:hover {
-  color: inherit;
-}
-
-.record-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-h);
-}
-
-.record-card-meta {
-  font-size: 12.5px;
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-/* The calendar's candidate link renders as <a class="record-card-meta"> so
-   it stays clickable/keyboard-navigable — override .page a's link styling
-   (bold, underlined) so it still reads as quiet meta text, not a headline
-   link, matching every other .record-card-meta line beside it. */
-.page a.record-card-meta {
-  border-bottom: none;
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.page a.record-card-meta:hover {
-  color: var(--text-h);
-}
-
-.record-card > .status-pill,
-.record-card > .btn-danger,
-.record-card > .btn-secondary {
-  align-self: flex-start;
 }
 
 /* The scorecard-submission question list (InterviewerScorecardPage) is a

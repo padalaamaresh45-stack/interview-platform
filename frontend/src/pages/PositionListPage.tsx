@@ -67,15 +67,27 @@ export function PositionListPage() {
       ) : positions.length === 0 ? (
         <p>No positions yet — create one above to get started.</p>
       ) : (
-        <div className="card-grid">
-          {positions.map((position) => (
-            <Link key={position.id} to={`/positions/${position.id}`} className="record-card">
-              <span className="record-card-title">{position.title}</span>
-              <span className="record-card-meta">
-                {position.question_count} question{position.question_count === 1 ? "" : "s"}
-              </span>
-            </Link>
-          ))}
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Questions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {positions.map((position) => (
+                <tr key={position.id}>
+                  <td>
+                    <Link to={`/positions/${position.id}`}>{position.title}</Link>
+                  </td>
+                  <td>
+                    {position.question_count} question{position.question_count === 1 ? "" : "s"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </main>

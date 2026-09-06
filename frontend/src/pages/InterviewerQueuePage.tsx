@@ -27,15 +27,29 @@ export function InterviewerQueuePage() {
       ) : candidates.length === 0 ? (
         <p className="detail-meta">You have no assigned candidates right now.</p>
       ) : (
-        <div className="card-grid">
-          {candidates.map((candidate) => (
-            <Link key={candidate.id} to={`/my-candidates/${candidate.id}`} className="record-card">
-              <span className="record-card-title">{candidate.full_name}</span>
-              <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
-                {candidate.status === "completed" ? "Scored" : "Awaiting your scorecard"}
-              </span>
-            </Link>
-          ))}
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {candidates.map((candidate) => (
+                <tr key={candidate.id}>
+                  <td>
+                    <Link to={`/my-candidates/${candidate.id}`}>{candidate.full_name}</Link>
+                  </td>
+                  <td>
+                    <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
+                      {candidate.status === "completed" ? "Scored" : "Awaiting your scorecard"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </main>

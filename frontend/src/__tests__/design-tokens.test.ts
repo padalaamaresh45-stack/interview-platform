@@ -52,9 +52,8 @@ describe("small-control border radius (#20)", () => {
     expect(css).not.toMatch(/border-radius:\s*12px/);
   });
 
-  it("collapses inputs, record cards, and table end-caps onto the shared 10px value", () => {
+  it("collapses inputs and table end-caps onto the shared 10px value", () => {
     declares(".page input,\n.page select,\n.page textarea", "border-radius", "10px");
-    declares(".record-card", "border-radius", "10px");
     declares(".page td:first-child", "border-top-left-radius", "10px");
     declares(".page td:last-child", "border-top-right-radius", "10px");
   });

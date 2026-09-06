@@ -287,7 +287,7 @@ export function CandidateDetailPage() {
           {interviews.length === 0 ? (
             <p className="detail-meta">No interviews scheduled yet.</p>
           ) : (
-            <ul className="history-list">
+            <ul className="history-list interview-history-list">
               {interviews.map((iv) => (
                 <li key={iv.id}>
                   {new Date(iv.scheduled_at).toLocaleString(undefined, {
@@ -314,7 +314,7 @@ export function CandidateDetailPage() {
       {history && (
         <section>
           <h2>Stage history</h2>
-          <ul className="history-list">
+          <ul className="history-list stage-history-list">
             {history.stage_history.map((t) => (
               <li key={t.id}>
                 {t.from_stage_name ? `${t.from_stage_name} → ${t.to_stage_name}` : `Entered ${t.to_stage_name}`} by{" "}
@@ -333,7 +333,7 @@ export function CandidateDetailPage() {
           {history.scores.length === 0 ? (
             <p className="detail-meta">No scores submitted yet.</p>
           ) : (
-            <ul className="history-list">
+            <ul className="history-list score-history-list">
               {history.scores.map((s) => (
                 <li key={s.id}>
                   Question #{s.question_id}: {s.score}/5{s.comment ? ` — ${s.comment}` : ""}

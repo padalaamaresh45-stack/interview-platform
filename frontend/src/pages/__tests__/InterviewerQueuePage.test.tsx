@@ -61,6 +61,32 @@ describe("InterviewerQueuePage", () => {
     expect(await screen.findByRole("link", { name: /Cara Candidate/ })).toBeInTheDocument();
   });
 
+  it("renders assigned candidates as table rows", async () => {
+    mockListMyCandidates.mockResolvedValue([
+      {
+        id: 1,
+        full_name: "Cara Candidate",
+        email: null,
+        phone: null,
+        position_id: 1,
+        owner_id: 5,
+        open_round_id: 10,
+        status: "completed",
+        hold_reason: null,
+        hold_review_by: null,
+        created_by: 1,
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+    renderQueue();
+    const table = await screen.findByRole("table");
+    expect(table).toBeInTheDocument();
+    expect(screen.getAllByRole("row")).toHaveLength(2); // header + 1 candidate
+    expect(screen.getByRole("link", { name: "Cara Candidate" })).toHaveAttribute("href", "/my-candidates/1");
+    expect(screen.getByText("Scored")).toBeInTheDocument();
+  });
+
   it("shows an alert with the server's message on a generic fetch failure, not a leaked internal error", async () => {
     mockListMyCandidates.mockRejectedValue(new Error("Not authenticated."));
     renderQueue();

@@ -256,22 +256,39 @@ export function CalendarPage() {
         {selectedInterviews.length === 0 ? (
           <p className="detail-meta">Nothing scheduled this day.</p>
         ) : (
-          <div className="card-grid">
-            {selectedInterviews.map((interview) => (
-              <div key={interview.id} className="record-card">
-                <span className="record-card-title">{timeRange(interview.scheduled_at, interview.duration_minutes)}</span>
-                <Link to={`/candidates/${interview.candidate_id}`} className="record-card-meta">
-                  {interview.candidate_name} · {interview.position_title}
-                </Link>
-                {isAdmin && <span className="record-card-meta">with {interview.interviewer_name}</span>}
-                {interview.notes && <span className="record-card-meta">{interview.notes}</span>}
-                {isAdmin && (
-                  <button className="btn-danger" onClick={() => handleCancel(interview.id)}>
-                    Cancel
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Candidate</th>
+                  {isAdmin && <th>Interviewer</th>}
+                  <th>Notes</th>
+                  {isAdmin && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {selectedInterviews.map((interview) => (
+                  <tr key={interview.id}>
+                    <td>{timeRange(interview.scheduled_at, interview.duration_minutes)}</td>
+                    <td>
+                      <Link to={`/candidates/${interview.candidate_id}`}>
+                        {interview.candidate_name} · {interview.position_title}
+                      </Link>
+                    </td>
+                    {isAdmin && <td>{interview.interviewer_name}</td>}
+                    <td>{interview.notes}</td>
+                    {isAdmin && (
+                      <td>
+                        <button className="btn-danger" onClick={() => handleCancel(interview.id)}>
+                          Cancel
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

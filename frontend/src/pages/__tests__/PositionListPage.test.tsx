@@ -43,6 +43,18 @@ describe("PositionListPage", () => {
     expect(await screen.findByText(/0 questions/)).toBeInTheDocument();
   });
 
+  it("renders positions as table rows with a link per title", async () => {
+    mockListPositions.mockResolvedValue([
+      { id: 1, title: "Backend Engineer", question_count: 3, candidate_count: 0, created_at: "", updated_at: "" },
+      { id: 2, title: "Designer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
+    ]);
+    renderPage();
+    const table = await screen.findByRole("table");
+    expect(table).toBeInTheDocument();
+    expect(screen.getAllByRole("row")).toHaveLength(3); // header + 2 positions
+    expect(screen.getByRole("link", { name: "Backend Engineer" })).toHaveAttribute("href", "/positions/1");
+  });
+
   it("surfaces a fetch failure as an alert", async () => {
     mockListPositions.mockRejectedValue(new Error("Insufficient permissions."));
     renderPage();
