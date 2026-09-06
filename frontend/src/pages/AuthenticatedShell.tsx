@@ -116,9 +116,14 @@ export function AuthenticatedShell() {
           ))}
         </div>
         <div className="nav-rail-items">
-          <span className="nav-rail-user" title={`${user.full_name} (${user.role})`}>
+          <Link
+            to="/profile"
+            className="nav-rail-user"
+            aria-label="Profile settings"
+            title={`${user.full_name} (${user.role}) — profile settings`}
+          >
             {user.full_name.slice(0, 1).toUpperCase()}
-          </span>
+          </Link>
           <button className="nav-rail-item" onClick={handleLogout} aria-label="Log out" title="Log out">
             <LogoutIcon />
           </button>

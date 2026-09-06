@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.models.candidate import CandidateStatus
+from app.schemas.candidate import CandidateOut
 from app.schemas.question import QuestionOut
 
 
@@ -39,3 +40,12 @@ class InterviewerCandidateDetail(BaseModel):
     round_id: int | None
     questions: list[QuestionOut]
     scores: list[InterviewScoreOut]
+
+
+class MyCandidateOut(CandidateOut):
+    """CandidateOut plus the interviewer-portal-only scorecard_due_at, derived
+    from the interviewer's own open round (not stored). Rendered by the
+    frontend in the interviewer's own User.timezone, not browser-local —
+    see ticket #29."""
+
+    scorecard_due_at: datetime | None

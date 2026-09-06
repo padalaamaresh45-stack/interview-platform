@@ -20,12 +20,17 @@ class UserUpdate(BaseModel):
     full_name: str = Field(min_length=1, max_length=255)
 
 
+class UserTimezoneUpdate(BaseModel):
+    timezone: str = Field(min_length=1, max_length=64)
+
+
 class UserOut(BaseModel):
     id: int
     email: str
     full_name: str
     role: UserRole
     is_active: bool
+    timezone: str | None
     created_at: datetime
     updated_at: datetime
 

@@ -20,6 +20,7 @@ export interface Interviewer {
   id: number;
   full_name: string;
   email: string;
+  timezone: string | null;
 }
 
 async function parseOrThrow<T>(res: Response): Promise<T> {

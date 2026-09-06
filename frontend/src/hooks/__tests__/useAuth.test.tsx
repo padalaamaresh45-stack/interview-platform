@@ -38,6 +38,7 @@ describe("AuthProvider", () => {
       email: "admin@example.com",
       full_name: "Ada Admin",
       role: "admin",
+      timezone: null,
     });
     render(
       <AuthProvider>

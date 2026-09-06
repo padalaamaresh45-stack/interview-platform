@@ -1,16 +1,21 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 
 from app.auth.dependencies import require_interviewer
 from app.database import get_db
 from app.models.candidate import Candidate, CandidateStatus
+from app.models.interview import Interview, InterviewStatus
 from app.models.interview_score import InterviewScore
 from app.models.question import Question
 from app.models.round import Round, RoundStatus
+from app.models.stage import Stage
 from app.models.user import User
 from app.pipeline.access import candidate_to_out, interviewer_has_access
+from app.pipeline.derive import compute_scorecard_due_at
 from app.schemas.candidate import CandidateOut
-from app.schemas.interview_score import InterviewerCandidateDetail, ScoreSubmitRequest
+from app.schemas.interview_score import InterviewerCandidateDetail, MyCandidateOut, ScoreSubmitRequest
 from app.scoring.submit import submit_scores
 
 router = APIRouter(prefix="/api/interviewer/candidates", tags=["interviewer"])
@@ -24,13 +29,13 @@ def _get_own_candidate_or_404(db: DBSession, candidate_id: int, interviewer: Use
     return candidate
 
 
-@router.get("", response_model=list[CandidateOut])
+@router.get("", response_model=list[MyCandidateOut])
 def list_my_candidates(
     db: DBSession = Depends(get_db),
     interviewer: User = Depends(require_interviewer),
 ):
-    candidates = (
-        db.query(Candidate)
+    rows = (
+        db.query(Candidate, Round)
         .join(Round, Round.candidate_id == Candidate.id)
         .filter(
             Round.assignee_id == interviewer.id,
@@ -40,7 +45,21 @@ def list_my_candidates(
         .order_by(Candidate.id)
         .all()
     )
-    return [candidate_to_out(db, c) for c in candidates]
+    results = []
+    for candidate, round_ in rows:
+        scorecard_due_at = None
+        interview = (
+            db.query(Interview)
+            .filter(Interview.round_id == round_.id, Interview.status == InterviewStatus.scheduled)
+            .first()
+        )
+        if interview is not None:
+            stage = db.get(Stage, round_.stage_id)
+            interview_end_at = interview.scheduled_at + timedelta(minutes=interview.duration_minutes)
+            scorecard_due_at = compute_scorecard_due_at(interview_end_at, stage.feedback_grace_hours)
+        base = candidate_to_out(db, candidate)
+        results.append(MyCandidateOut(**base.model_dump(), scorecard_due_at=scorecard_due_at))
+    return results
 
 
 @router.get("/{candidate_id}", response_model=InterviewerCandidateDetail)

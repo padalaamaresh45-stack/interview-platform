@@ -10,6 +10,7 @@ import { InterviewerQueuePage } from "./pages/InterviewerQueuePage";
 import { InterviewerScorecardPage } from "./pages/InterviewerScorecardPage";
 import { PositionDetailPage } from "./pages/PositionDetailPage";
 import { PositionListPage } from "./pages/PositionListPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { UserListPage } from "./pages/UserListPage";
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
             <Route path="/my-candidates" element={<InterviewerQueuePage />} />
             <Route path="/my-candidates/:candidateId" element={<InterviewerScorecardPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

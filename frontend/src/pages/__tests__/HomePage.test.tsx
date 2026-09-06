@@ -44,10 +44,11 @@ afterEach(() => {
 describe("HomePage board header", () => {
   it("shows the count with the scoped position title", async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 1, role: "admin", full_name: "Admin", email: "a@a.com" },
+      user: { id: 1, role: "admin", full_name: "Admin", email: "a@a.com", timezone: null },
       initializing: false,
       login: vi.fn(),
       logout: vi.fn(),
+      updateTimezone: vi.fn(),
     });
     mockListPositions.mockResolvedValue(positions);
     mockGetBoard.mockResolvedValue(board);

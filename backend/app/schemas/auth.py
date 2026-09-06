@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    browser_timezone: str | None = None
 
 
 class LoginResponse(BaseModel):
@@ -11,3 +12,4 @@ class LoginResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    timezone: str | None

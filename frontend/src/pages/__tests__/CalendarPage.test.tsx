@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CalendarPage } from "../CalendarPage";
 import { useAuth } from "../../hooks/useAuth";
 import { cancelInterview, listAllInterviews, type Interview } from "../../api/interviews";
-import { listCandidates } from "../../api/candidates";
+import { listActiveInterviewers, listCandidates } from "../../api/candidates";
 
 vi.mock("../../hooks/useAuth");
 vi.mock("../../api/interviews");
@@ -16,6 +16,7 @@ const mockUseAuth = vi.mocked(useAuth);
 const mockListAllInterviews = vi.mocked(listAllInterviews);
 const mockCancelInterview = vi.mocked(cancelInterview);
 const mockListCandidates = vi.mocked(listCandidates);
+const mockListActiveInterviewers = vi.mocked(listActiveInterviewers);
 
 function todayKey(): string {
   const d = new Date();
@@ -42,6 +43,7 @@ describe("CalendarPage day-detail list", () => {
       logout: vi.fn(),
     } as unknown as ReturnType<typeof useAuth>);
     mockListCandidates.mockResolvedValue([]);
+    mockListActiveInterviewers.mockResolvedValue([]);
 
     const interview: Interview = {
       id: 1,
@@ -69,5 +71,59 @@ describe("CalendarPage day-detail list", () => {
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
     await userEvent.click(cancelButton);
     expect(mockCancelInterview).toHaveBeenCalledWith(interview.id);
+  });
+});
+
+describe("CalendarPage scheduling picker — assignee-local-time preview", () => {
+  it("shows the assignee's local time next to the picker, updating live as a time is chosen", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, role: "admin", full_name: "Admin", email: "a@a.com" },
+      login: vi.fn(),
+      logout: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+    mockListAllInterviews.mockResolvedValue([]);
+    mockListCandidates.mockResolvedValue([
+      {
+        id: 5,
+        full_name: "Priya Interviewer's Candidate",
+        email: null,
+        phone: null,
+        position_id: 1,
+        owner_id: 42,
+        open_round_id: 10,
+        status: "not_started",
+        hold_reason: null,
+        hold_review_by: null,
+        created_by: 1,
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+    mockListActiveInterviewers.mockResolvedValue([
+      { id: 42, full_name: "Priya", email: "priya@example.com", timezone: "Asia/Kolkata" },
+    ]);
+
+    renderCalendar();
+
+    await userEvent.selectOptions(await screen.findByLabelText("Candidate"), "5");
+    await userEvent.type(screen.getByLabelText("When"), "2026-01-15T09:00");
+
+    expect(await screen.findByText(/for Priya/)).toBeInTheDocument();
+  });
+
+  it("does not show a preview before a candidate and time are both chosen", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, role: "admin", full_name: "Admin", email: "a@a.com" },
+      login: vi.fn(),
+      logout: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+    mockListAllInterviews.mockResolvedValue([]);
+    mockListCandidates.mockResolvedValue([]);
+    mockListActiveInterviewers.mockResolvedValue([]);
+
+    renderCalendar();
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    expect(screen.queryByText(/ for /)).not.toBeInTheDocument();
   });
 });

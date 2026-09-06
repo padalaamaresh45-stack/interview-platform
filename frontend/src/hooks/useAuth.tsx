@@ -1,12 +1,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { CurrentUser } from "../api/auth";
-import { fetchCurrentUser, login as apiLogin, logout as apiLogout } from "../api/auth";
+import {
+  fetchCurrentUser,
+  login as apiLogin,
+  logout as apiLogout,
+  updateMyTimezone as apiUpdateMyTimezone,
+} from "../api/auth";
 
 interface AuthContextValue {
   user: CurrentUser | null;
   initializing: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateTimezone: (timezone: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,8 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function updateTimezone(timezone: string) {
+    const updatedUser = await apiUpdateMyTimezone(timezone);
+    setUser(updatedUser);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, initializing, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, initializing, login, logout, updateTimezone }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

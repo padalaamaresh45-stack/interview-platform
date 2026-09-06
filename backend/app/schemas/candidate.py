@@ -41,5 +41,6 @@ class InterviewerOut(BaseModel):
     id: int
     full_name: str
     email: str
+    timezone: str | None
 
     model_config = {"from_attributes": True}

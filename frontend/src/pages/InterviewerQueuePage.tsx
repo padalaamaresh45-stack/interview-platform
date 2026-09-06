@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listMyCandidates } from "../api/interviewer";
-import type { Candidate } from "../api/candidates";
+import { listMyCandidates, type MyCandidate } from "../api/interviewer";
+import { useAuth } from "../hooks/useAuth";
+import { browserTimezone, formatDateTimeInZone } from "../utils/timezone";
 
 export function InterviewerQueuePage() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const { user } = useAuth();
+  // scorecard_due_at renders in the interviewer's own profile timezone, not
+  // wherever their browser currently is — these can diverge while traveling.
+  const timezone = user?.timezone ?? browserTimezone();
+  const [candidates, setCandidates] = useState<MyCandidate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +38,7 @@ export function InterviewerQueuePage() {
               <tr>
                 <th>Name</th>
                 <th>Status</th>
+                <th>Scorecard due</th>
               </tr>
             </thead>
             <tbody>
@@ -45,6 +51,11 @@ export function InterviewerQueuePage() {
                     <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
                       {candidate.status === "completed" ? "Scored" : "Awaiting your scorecard"}
                     </span>
+                  </td>
+                  <td>
+                    {candidate.scorecard_due_at
+                      ? formatDateTimeInZone(candidate.scorecard_due_at, timezone)
+                      : "Not yet scheduled"}
                   </td>
                 </tr>
               ))}

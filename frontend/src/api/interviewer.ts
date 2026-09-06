@@ -39,7 +39,11 @@ async function parseOrThrow<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export async function listMyCandidates(): Promise<Candidate[]> {
+export interface MyCandidate extends Candidate {
+  scorecard_due_at: string | null;
+}
+
+export async function listMyCandidates(): Promise<MyCandidate[]> {
   return parseOrThrow(await apiFetch("/api/interviewer/candidates"));
 }
 

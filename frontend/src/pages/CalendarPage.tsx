@@ -8,7 +8,8 @@ import {
   scheduleInterview,
   type Interview,
 } from "../api/interviews";
-import { listCandidates, type Candidate } from "../api/candidates";
+import { listActiveInterviewers, listCandidates, type Candidate, type Interviewer } from "../api/candidates";
+import { browserTimezone, formatDateTimeInZone, zoneAbbreviation } from "../utils/timezone";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -43,6 +44,7 @@ export function CalendarPage() {
 
   const [interviews, setInterviews] = useState<Interview[] | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const today = useMemo(() => new Date(), []);
@@ -69,9 +71,24 @@ export function CalendarPage() {
     refresh();
     if (isAdmin) {
       listCandidates().then(setCandidates);
+      listActiveInterviewers().then(setInterviewers);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
+
+  const selectedCandidate = candidates.find((c) => c.id === Number(candidateId));
+  const assignee = selectedCandidate ? interviewers.find((i) => i.id === selectedCandidate.owner_id) : undefined;
+
+  // Assignee-local-time preview, computed live as the admin picks a time —
+  // out-of-hours is surfaced here, never blocked (ticket #29).
+  let assigneeLocalPreview: string | null = null;
+  if (assignee?.timezone && scheduledAt) {
+    const iso = new Date(scheduledAt).toISOString();
+    const adminZone = browserTimezone();
+    const adminLabel = `${formatDateTimeInZone(iso, adminZone)} ${zoneAbbreviation(iso, adminZone)}`;
+    const assigneeLabel = `${formatDateTimeInZone(iso, assignee.timezone)} ${zoneAbbreviation(iso, assignee.timezone)}`;
+    assigneeLocalPreview = `${adminLabel} · ${assigneeLabel} for ${assignee.full_name}`;
+  }
 
   async function handleSchedule(e: FormEvent) {
     e.preventDefault();
@@ -175,6 +192,7 @@ export function CalendarPage() {
               onChange={(e) => setScheduledAt(e.target.value)}
               required
             />
+            {assigneeLocalPreview && <p className="field-hint">{assigneeLocalPreview}</p>}
           </div>
           <div className="field">
             <label htmlFor="cal-duration">Duration (min)</label>
