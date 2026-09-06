@@ -10,7 +10,14 @@
      reads better at scale than warm. Still not sterile pure white. */
   --bg: #fdfcfa;
   --surface: #ffffff;
+  /* Decorative only: card outlines, dividers, separators — anything whose
+     boundary is not what identifies it (content/position already does). */
   --border: #e7e4de;
+  /* Interactive control boundaries only: text inputs, selects, textareas,
+     checkboxes/toggles, secondary/outline buttons — an empty control whose
+     border IS the only thing identifying it. Meets WCAG 1.4.11 (>=3:1
+     against --surface; measures ~3.5:1). */
+  --border-interactive: #8f8880;
   --code-bg: #f4f2ee;
   --social-bg: rgba(244, 243, 236, 0.5);
   /* Primary actions and links are monochrome ink — the whole palette is
@@ -236,15 +243,26 @@ code {
   flex: 1;
 }
 
-.btn-primary {
+/* One shared shape/color/text definition for every primary CTA — the pill
+   (999px), --cta-bg, 13px/600 — so the board's "+ Add candidate", every
+   .page submit button, and the login submit button can't drift apart into
+   three near-identical rules again. Layout-only properties (padding, height,
+   margin, hover/disabled deltas) stay on each site's own rule below,
+   since those genuinely differ by context. */
+.btn-primary,
+.page button[type="submit"],
+.login-card form button {
   background: var(--cta-bg);
   color: var(--on-cta);
   border: none;
   border-radius: 999px;
-  padding: 9px 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.btn-primary {
+  padding: 9px 20px;
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -256,7 +274,7 @@ code {
 .btn-secondary {
   background: var(--surface);
   color: var(--text-h);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-interactive);
   border-radius: 999px;
   padding: 9px 18px;
   font-size: 13px;
@@ -470,23 +488,29 @@ code {
    thing — center that one thing, both axes, in its own card instead of
    trying to fit it into the "content-following" .page layout every other
    screen uses. */
+/* Centred, biased slightly above true centre via the extra bottom padding —
+   not percentage/absolute positioning, which breaks as the card's height
+   changes. Degrades to scrolling (not clipping) on short viewports. */
 .login-shell {
-  min-height: 100svh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  padding: 24px;
+  align-items: center;
+  padding: 24px 24px calc(24px + 6vh);
+  overflow-y: auto;
   box-sizing: border-box;
+  background: var(--bg);
 }
 
 .login-card {
-  width: 100%;
-  max-width: 380px;
+  width: 340px;
+  max-width: 100%;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 32px;
+  padding: 32px 28px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -494,14 +518,26 @@ code {
   box-sizing: border-box;
 }
 
+.login-mark {
+  margin-bottom: 20px;
+}
+
 .login-card h1 {
-  font-size: 20px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0 0 28px;
 }
 
 .login-card form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   padding-bottom: 0;
   border-bottom: none;
 }
@@ -509,35 +545,93 @@ code {
 .login-card form .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+.login-card form .field + .field {
+  margin-top: 20px;
+}
+
+.login-card form .field-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 .login-card form label {
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.login-forgot {
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--text-muted);
+  text-decoration: none;
+}
+
+.login-forgot:hover {
+  color: var(--text-h);
 }
 
 .login-card form input {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border-interactive);
+  border-radius: 10px;
   background: var(--surface);
   color: var(--text-h);
   font: inherit;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-card form input:focus {
+  outline: none;
+  border-color: var(--cta-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-bg) 15%, transparent);
+}
+
+.login-card form input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--code-bg);
+}
+
+/* Always rendered (even empty) so the aria-live region exists in the DOM
+   before content is added into it — announcing a region that was just
+   created can get missed by screen readers. Zero height/margin when empty
+   so it doesn't disturb the "last field -> button: 28px" rhythm. */
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--health-stalled);
+  font-size: 13px;
+}
+
+.login-error:empty {
+  display: none;
+}
+
+.login-error:not(:empty) {
+  margin-top: 8px;
+}
+
+.login-error svg {
+  flex: 0 0 auto;
 }
 
 .login-card form button {
+  margin-top: 28px;
+  height: 42px;
   align-self: stretch;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  background: var(--cta-bg);
-  color: var(--on-cta);
-  border: none;
-  border-radius: 999px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 0 20px;
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -549,6 +643,44 @@ code {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.login-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid color-mix(in srgb, var(--on-cta) 40%, transparent);
+  border-top-color: var(--on-cta);
+  border-radius: 50%;
+  animation: login-spin 0.6s linear infinite;
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-footer {
+  margin: 20px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.app-mark {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--cta-bg);
+  color: var(--on-cta);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 @media (max-width: 720px) {
@@ -578,7 +710,7 @@ code {
   background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
   color: var(--health-stalled);
   border: 1px solid color-mix(in srgb, var(--health-stalled) 25%, transparent);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 14px;
   font-size: 13.5px;
   font-weight: 500;
@@ -681,8 +813,8 @@ code {
 .page select,
 .page textarea {
   padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--border-interactive);
+  border-radius: 10px;
   background: var(--surface);
   color: var(--text-h);
   font: inherit;
@@ -711,14 +843,7 @@ code {
 }
 
 .page button[type="submit"] {
-  background: var(--cta-bg);
-  color: var(--on-cta);
-  border: none;
-  border-radius: 999px;
   padding: 9px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -736,7 +861,7 @@ code {
 .page button:not([type="submit"]) {
   background: var(--surface);
   color: var(--text-h);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-interactive);
   border-radius: 999px;
   padding: 7px 16px;
   font-size: 13px;
@@ -800,14 +925,14 @@ code {
 
 .page td:first-child {
   border-left: 1px solid var(--border);
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
 }
 
 .page td:last-child {
   border-right: 1px solid var(--border);
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
 }
 
 .page tbody tr:hover td {
@@ -1042,7 +1167,7 @@ code {
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
@@ -1120,7 +1245,7 @@ code {
   gap: 8px;
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface);
 }
 
@@ -1160,7 +1285,7 @@ code {
   width: 34px;
   height: 20px;
   border-radius: 999px;
-  background: var(--border);
+  background: var(--border-interactive);
   transition: background-color 0.15s ease;
   flex: 0 0 auto;
 }
@@ -1237,7 +1362,7 @@ code {
   justify-content: center;
   gap: 4px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-interactive);
   border-radius: 10px;
   padding: 0;
   cursor: pointer;
