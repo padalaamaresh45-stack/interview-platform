@@ -20,9 +20,18 @@
   --border-interactive: #8f8880;
   --code-bg: #f4f2ee;
   --social-bg: rgba(244, 243, 236, 0.5);
-  /* Primary actions and links are monochrome ink — the whole palette is
-     black/white/gray plus one semantic red/coral for the stalled health
-     state (see --health-stalled below). Nothing else carries color. */
+  /* Primary actions and links are monochrome ink. Color is reserved for
+     three semantic accents, grouped by KIND (what triggered the color),
+     not by how alarming each individually looks:
+     --warning: ambient data states the system is just reporting (a
+       candidate stalled, a round overdue) — nobody did anything wrong.
+     --destructive: the system responding to a user's own destructive
+       action or a failed submission (delete buttons, error banners).
+     --brand: the one additive, non-semantic accent — identifies "this is
+       us" (active nav, primary CTA) rather than reporting a state. */
+  --warning: #e0562f;
+  --destructive: #dc2626;
+  --brand: #6d28d9;
   --cta-bg: var(--text-h);
   --cta-hover: #262626;
   --on-cta: #fff;
@@ -177,8 +186,8 @@ code {
 }
 
 .nav-rail-item.active {
-  background: var(--bg);
-  color: var(--text-h);
+  background: var(--brand);
+  color: var(--on-cta);
   opacity: 1;
 }
 
@@ -217,7 +226,6 @@ code {
      "good" color on every card would camouflage the exception (stalled)
      that actually needs attention. Saturation is reserved for what's wrong. */
   --health-on-track: var(--border);
-  --health-stalled: #e0562f;
 }
 
 .board-header {
@@ -384,8 +392,8 @@ code {
   box-shadow: var(--shadow-lg);
 }
 
-.pipeline-card.health-stalled {
-  border-left-color: var(--health-stalled);
+.pipeline-card-warning {
+  border-left-color: var(--warning);
 }
 
 .pipeline-card-top {
@@ -440,8 +448,8 @@ code {
 }
 
 .health-pill.stalled {
-  color: var(--health-stalled);
-  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
 }
 
 .pipeline-card-next-action {
@@ -456,7 +464,7 @@ code {
 }
 
 .danger {
-  color: var(--health-stalled);
+  color: var(--warning);
 }
 
 /* ---------- Shared page chrome ----------
@@ -608,7 +616,7 @@ code {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--health-stalled);
+  color: var(--destructive);
   font-size: 13px;
 }
 
@@ -711,9 +719,9 @@ code {
 }
 
 .page > p[role="alert"] {
-  background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
-  color: var(--health-stalled);
-  border: 1px solid color-mix(in srgb, var(--health-stalled) 25%, transparent);
+  background: color-mix(in srgb, var(--destructive) 8%, transparent);
+  color: var(--destructive);
+  border: 1px solid color-mix(in srgb, var(--destructive) 25%, transparent);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13.5px;
@@ -1146,9 +1154,11 @@ code {
    One small badge component for any two/three-state status text (user
    active/deactivated, candidate not_started/completed) — text alone was
    easy to miss scanning a dense column; a pill gives it a fixed visual
-   weight regardless of the word's length. Neutral by default; only a
-   genuinely negative state (deactivated) gets the red tint, matching the
-   rule that red means "needs attention" everywhere else in the app. */
+   weight regardless of the word's length. Every caller passes an explicit
+   `tone` rather than relying on a boolean/className guess at what a given
+   status means — a binary like "deactivated" or "not started" is a state,
+   not a problem, so it stays neutral rather than inheriting whatever tint
+   another caller's alarming state happens to use. */
 .status-pill {
   display: inline-block;
   font-size: 10px;
@@ -1161,13 +1171,18 @@ code {
   color: var(--text-muted);
 }
 
-.status-pill.status-active {
+.status-pill--neutral {
   color: var(--text-muted);
 }
 
-.status-pill.status-inactive {
-  color: var(--health-stalled);
-  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+.status-pill--warning {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+.status-pill--success {
+  color: var(--text);
+  background: color-mix(in srgb, var(--health-on-track) 20%, transparent);
 }
 
 /* ---------- Interviewer portal three-state rows (ticket #33) ----------
@@ -1185,7 +1200,7 @@ code {
 }
 
 .queue-row-overdue {
-  border-left: 3px solid var(--health-stalled);
+  border-left: 3px solid var(--warning);
 }
 
 .status-pill-needs_scheduling {
@@ -1198,8 +1213,8 @@ code {
 }
 
 .status-pill-overdue {
-  color: var(--health-stalled);
-  background: color-mix(in srgb, var(--health-stalled) 12%, transparent);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
 }
 
 /* ---------- Row actions ----------
@@ -1221,8 +1236,8 @@ code {
    secondary-button styling silently wins and the color never applies. */
 .page button.btn-danger {
   background: var(--surface);
-  color: var(--health-stalled);
-  border: 1px solid color-mix(in srgb, var(--health-stalled) 40%, transparent);
+  color: var(--destructive);
+  border: 1px solid color-mix(in srgb, var(--destructive) 40%, transparent);
   border-radius: 999px;
   padding: 7px 16px;
   font-size: 13px;
@@ -1232,8 +1247,8 @@ code {
 }
 
 .page button.btn-danger:hover {
-  background: color-mix(in srgb, var(--health-stalled) 8%, transparent);
-  border-color: var(--health-stalled);
+  background: color-mix(in srgb, var(--destructive) 8%, transparent);
+  border-color: var(--destructive);
 }
 
 /* The scorecard-submission question list (InterviewerScorecardPage) is a

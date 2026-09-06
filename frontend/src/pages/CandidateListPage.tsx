@@ -4,6 +4,7 @@ import { createCandidate, listActiveInterviewers, listCandidates, type Candidate
 import { listPositions, type Position } from "../api/positions";
 import { listUsers, type AdminUser } from "../api/users";
 import { Modal } from "../components/Modal";
+import { StatusPill } from "../components/StatusPill";
 
 export function CandidateListPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -174,11 +175,9 @@ export function CandidateListPage() {
                 <td>{positionTitle(candidate.position_id)}</td>
                 <td>{interviewerName(candidate.owner_id)}</td>
                 <td>
-                  <span
-                    className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}
-                  >
+                  <StatusPill tone="neutral">
                     {candidate.status === "completed" ? "Completed" : "Not started"}
-                  </span>
+                  </StatusPill>
                 </td>
               </tr>
             ))}

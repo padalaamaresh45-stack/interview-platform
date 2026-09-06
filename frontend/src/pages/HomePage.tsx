@@ -244,7 +244,7 @@ function PipelineBoard() {
                 column.candidates.map((candidate) => (
                   <div
                     key={candidate.id}
-                    className={`pipeline-card${candidate.health ? ` health-${candidate.health}` : ""}`}
+                    className={`pipeline-card${candidate.health === "stalled" ? " pipeline-card-warning" : ""}`}
                     draggable
                     onDragStart={() => setDraggingId(candidate.id)}
                     onClick={() => navigate(`/candidates/${candidate.id}`)}

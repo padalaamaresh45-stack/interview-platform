@@ -9,6 +9,7 @@ import {
   type AdminUser,
 } from "../api/users";
 import { Modal } from "../components/Modal";
+import { StatusPill } from "../components/StatusPill";
 
 export function UserListPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -194,9 +195,9 @@ export function UserListPage() {
                       <span className="toggle-caption">{user.is_active ? "Active" : "Deactivated"}</span>
                     </label>
                   ) : (
-                    <span className={`status-pill ${user.is_active ? "status-active" : "status-inactive"}`}>
+                    <StatusPill tone="neutral">
                       {user.is_active ? "Active" : "Deactivated"}
-                    </span>
+                    </StatusPill>
                   )}
                 </td>
                 <td className="actions-cell">

@@ -90,3 +90,48 @@ describe("CandidateListPage create modal", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+describe("CandidateListPage status pill tone (#24)", () => {
+  it("renders neutral tone for both not_started and completed candidates", async () => {
+    mockListCandidates.mockResolvedValue([
+      {
+        id: 1,
+        full_name: "Not Started Nancy",
+        email: null,
+        phone: null,
+        position_id: 1,
+        owner_id: 2,
+        open_round_id: null,
+        status: "not_started",
+        hold_reason: null,
+        hold_review_by: null,
+        created_by: 1,
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: 2,
+        full_name: "Completed Cody",
+        email: null,
+        phone: null,
+        position_id: 1,
+        owner_id: 2,
+        open_round_id: null,
+        status: "completed",
+        hold_reason: null,
+        hold_review_by: null,
+        created_by: 1,
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+    mockListPositions.mockResolvedValue([position]);
+    mockListActiveInterviewers.mockResolvedValue([interviewer]);
+    mockListUsers.mockResolvedValue([]);
+
+    renderPage();
+
+    expect(await screen.findByText("Not started")).toHaveClass("status-pill--neutral");
+    expect(screen.getByText("Completed")).toHaveClass("status-pill--neutral");
+  });
+});

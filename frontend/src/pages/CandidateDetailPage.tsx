@@ -21,6 +21,7 @@ import {
   type Stage,
 } from "../api/pipeline";
 import { listAllInterviews, type Interview } from "../api/interviews";
+import { StatusPill } from "../components/StatusPill";
 
 export function CandidateDetailPage() {
   const { candidateId } = useParams<{ candidateId: string }>();
@@ -230,9 +231,9 @@ export function CandidateDetailPage() {
         <h1>{candidate.full_name}</h1>
         <p className="detail-meta">
           {position?.title ?? `#${candidate.position_id}`} ·{" "}
-          <span className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}>
+          <StatusPill tone="neutral">
             {candidate.status === "completed" ? "Completed" : "Not started"}
-          </span>
+          </StatusPill>
         </p>
       </section>
 

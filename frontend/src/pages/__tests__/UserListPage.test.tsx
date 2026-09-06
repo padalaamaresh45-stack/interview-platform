@@ -58,3 +58,33 @@ describe("UserListPage create modal", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+describe("UserListPage status pill tone (#24)", () => {
+  it("renders neutral tone for both active and deactivated users", async () => {
+    mockListUsers.mockResolvedValue([
+      {
+        id: 1,
+        email: "active@example.com",
+        full_name: "Active Amy",
+        role: "interviewer",
+        is_active: true,
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: 2,
+        email: "deactivated@example.com",
+        full_name: "Deactivated Dan",
+        role: "interviewer",
+        is_active: false,
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+
+    render(<UserListPage />);
+
+    expect(await screen.findByText("Active")).toHaveClass("status-pill--neutral");
+    expect(screen.getByText("Deactivated")).toHaveClass("status-pill--neutral");
+  });
+});
