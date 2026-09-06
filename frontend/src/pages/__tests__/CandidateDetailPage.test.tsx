@@ -25,8 +25,11 @@ const candidate = {
   email: null,
   phone: null,
   position_id: 1,
-  interviewer_id: DEACTIVATED_INTERVIEWER_ID,
+  owner_id: DEACTIVATED_INTERVIEWER_ID,
+  open_round_id: 1,
   status: "not_started" as const,
+  hold_reason: null,
+  hold_review_by: null,
   created_by: 1,
   created_at: "",
   updated_at: "",
@@ -47,7 +50,7 @@ afterEach(() => {
 });
 
 describe("CandidateDetailPage", () => {
-  it("keeps a since-deactivated assigned interviewer visibly selected instead of silently falling back to a different option", async () => {
+  it("shows the current owner as read-only text, even if since deactivated", async () => {
     mockGetCandidate.mockResolvedValue(candidate);
     mockListPositions.mockResolvedValue([
       { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
@@ -75,43 +78,18 @@ describe("CandidateDetailPage", () => {
 
     renderPage();
 
-    const select = (await screen.findByLabelText("Interviewer")) as HTMLSelectElement;
-    expect(select.value).toBe(String(DEACTIVATED_INTERVIEWER_ID));
-    expect(screen.getByRole("option", { name: "Ivy Deactivated (deactivated)" })).toBeInTheDocument();
+    expect(await screen.findByText("Ivy Deactivated")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Interviewer" })).not.toBeInTheDocument();
 
-    // Saving without touching the dropdown must not send an interviewer_id
-    // change — the deactivated interviewer's assignment must survive untouched.
-    const form = select.closest("form");
+    // Saving must never send an owner/interviewer reassignment field — that
+    // capability doesn't exist yet (see ticket #26/#30).
+    const form = screen.getByRole("button", { name: "Save" }).closest("form");
     expect(form).not.toBeNull();
     // eslint-disable-next-line testing-library/no-node-access
     form!.requestSubmit();
     await vi.waitFor(() => expect(mockUpdateCandidate).toHaveBeenCalled());
     const [, updates] = mockUpdateCandidate.mock.calls[0];
-    expect(updates.interviewer_id).toBeUndefined();
-  });
-
-  it("disables deactivated interviewers as reassignment choices but keeps them selectable if already current", async () => {
-    mockGetCandidate.mockResolvedValue(candidate);
-    mockListPositions.mockResolvedValue([
-      { id: 1, title: "Backend Engineer", question_count: 1, candidate_count: 0, created_at: "", updated_at: "" },
-    ]);
-    mockListUsers.mockResolvedValue([
-      {
-        id: DEACTIVATED_INTERVIEWER_ID,
-        email: "deactivated@example.com",
-        full_name: "Ivy Deactivated",
-        role: "interviewer",
-        is_active: false,
-        created_at: "",
-        updated_at: "",
-      },
-    ]);
-
-    renderPage();
-
-    const option = (await screen.findByRole("option", {
-      name: "Ivy Deactivated (deactivated)",
-    })) as HTMLOptionElement;
-    expect(option.disabled).toBe(false); // it's the current assignment, so it must stay pickable/displayed
+    expect(updates).not.toHaveProperty("interviewer_id");
+    expect(updates).not.toHaveProperty("owner_id");
   });
 });

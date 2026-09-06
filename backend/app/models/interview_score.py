@@ -13,11 +13,12 @@ class InterviewScore(Base):
     __tablename__ = "interview_scores"
     __table_args__ = (
         CheckConstraint("score BETWEEN 1 AND 5", name="ck_interview_score_range"),
-        UniqueConstraint("candidate_id", "question_id", name="uq_interview_score_candidate_question"),
+        UniqueConstraint("round_id", "question_id", name="uq_interview_score_round_question"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     candidate_id: Mapped[int] = mapped_column(Integer, ForeignKey("candidates.id"), nullable=False)
+    round_id: Mapped[int] = mapped_column(Integer, ForeignKey("rounds.id"), nullable=False)
     question_id: Mapped[int] = mapped_column(Integer, ForeignKey("questions.id"), nullable=False)
     score: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str | None] = mapped_column(String, nullable=True)

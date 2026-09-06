@@ -5,6 +5,8 @@ from app.auth.session import SESSION_COOKIE_NAME, create_session
 from app.models.candidate import Candidate
 from app.models.interview import Interview
 from app.models.position import Position
+from app.models.round import Round
+from app.models.stage import Stage
 from app.models.user import User, UserRole
 
 ADMIN_EMAIL = "admin@example.com"
@@ -46,14 +48,28 @@ def _make_position(db_session, admin):
     return position
 
 
-def _make_candidate(db_session, admin, position, interviewer):
-    candidate = Candidate(
-        full_name="Cara Candidate", position_id=position.id, interviewer_id=interviewer.id, created_by=admin.id
+def _first_stage_id(db_session, position):
+    return (
+        db_session.query(Stage.id)
+        .filter(Stage.position_id == position.id)
+        .order_by(Stage.sequence_order)
+        .limit(1)
+        .scalar()
     )
+
+
+def _make_candidate_with_round(db_session, admin, position, interviewer, *, full_name="Cara Candidate"):
+    candidate = Candidate(full_name=full_name, position_id=position.id, created_by=admin.id)
     db_session.add(candidate)
+    db_session.flush()
+    round_ = Round(
+        candidate_id=candidate.id, stage_id=_first_stage_id(db_session, position), assignee_id=interviewer.id
+    )
+    db_session.add(round_)
     db_session.commit()
     db_session.refresh(candidate)
-    return candidate
+    db_session.refresh(round_)
+    return candidate, round_
 
 
 def test_admin_can_schedule_and_list_interviews(client, db_session):
@@ -65,14 +81,13 @@ def test_admin_can_schedule_and_list_interviews(client, db_session):
     db_session.add(interviewer)
     db_session.commit()
     db_session.refresh(interviewer)
-    candidate = _make_candidate(db_session, admin, position, interviewer)
+    candidate, round_ = _make_candidate_with_round(db_session, admin, position, interviewer)
 
     scheduled_at = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
     resp = client.post(
         "/api/admin/interviews",
         json={
-            "candidate_id": candidate.id,
-            "interviewer_id": interviewer.id,
+            "round_id": round_.id,
             "scheduled_at": scheduled_at,
             "duration_minutes": 45,
             "notes": "Focus on system design.",
@@ -84,6 +99,7 @@ def test_admin_can_schedule_and_list_interviews(client, db_session):
     assert body["interviewer_name"] == "Ivy"
     assert body["position_title"] == "Backend Engineer"
     assert body["duration_minutes"] == 45
+    assert body["status"] == "scheduled"
 
     listed = client.get("/api/admin/interviews")
     assert listed.status_code == 200
@@ -101,17 +117,14 @@ def test_interviewer_only_sees_their_own_interviews(client, db_session):
     db_session.refresh(iv_a)
     db_session.refresh(iv_b)
 
-    candidate_a = _make_candidate(db_session, admin, position, iv_a)
-    candidate_b = Candidate(
-        full_name="Bob Candidate", position_id=position.id, interviewer_id=iv_b.id, created_by=admin.id
+    candidate_a, round_a = _make_candidate_with_round(db_session, admin, position, iv_a)
+    candidate_b, round_b = _make_candidate_with_round(
+        db_session, admin, position, iv_b, full_name="Bob Candidate"
     )
-    db_session.add(candidate_b)
-    db_session.commit()
-    db_session.refresh(candidate_b)
 
     now = datetime.now(timezone.utc)
-    db_session.add(Interview(candidate_id=candidate_a.id, interviewer_id=iv_a.id, scheduled_at=now, created_by=admin.id))
-    db_session.add(Interview(candidate_id=candidate_b.id, interviewer_id=iv_b.id, scheduled_at=now, created_by=admin.id))
+    db_session.add(Interview(candidate_id=candidate_a.id, round_id=round_a.id, scheduled_at=now, created_by=admin.id))
+    db_session.add(Interview(candidate_id=candidate_b.id, round_id=round_b.id, scheduled_at=now, created_by=admin.id))
     db_session.commit()
 
     session = create_session(db_session, iv_a.id)
@@ -133,15 +146,11 @@ def test_admin_can_cancel_an_interview(client, db_session):
     db_session.add(interviewer)
     db_session.commit()
     db_session.refresh(interviewer)
-    candidate = _make_candidate(db_session, admin, position, interviewer)
+    candidate, round_ = _make_candidate_with_round(db_session, admin, position, interviewer)
 
     create_resp = client.post(
         "/api/admin/interviews",
-        json={
-            "candidate_id": candidate.id,
-            "interviewer_id": interviewer.id,
-            "scheduled_at": datetime.now(timezone.utc).isoformat(),
-        },
+        json={"round_id": round_.id, "scheduled_at": datetime.now(timezone.utc).isoformat()},
     )
     interview_id = create_resp.json()["id"]
 
@@ -151,6 +160,61 @@ def test_admin_can_cancel_an_interview(client, db_session):
     listed = client.get("/api/admin/interviews")
     assert listed.json() == []
 
+    stored = db_session.get(Interview, interview_id)
+    assert stored is not None
+    assert stored.status.value == "cancelled"
+
+
+def test_cancelled_interview_does_not_reappear_in_interviewer_list(client, db_session):
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = User(
+        email="iv4@example.com", password_hash=hash_password("pw"), full_name="Ivy", role=UserRole.interviewer
+    )
+    db_session.add(interviewer)
+    db_session.commit()
+    db_session.refresh(interviewer)
+    candidate, round_ = _make_candidate_with_round(db_session, admin, position, interviewer)
+
+    create_resp = client.post(
+        "/api/admin/interviews",
+        json={"round_id": round_.id, "scheduled_at": datetime.now(timezone.utc).isoformat()},
+    )
+    interview_id = create_resp.json()["id"]
+    client.delete(f"/api/admin/interviews/{interview_id}")
+
+    session = create_session(db_session, interviewer.id)
+    client.cookies.set(SESSION_COOKIE_NAME, session.id)
+    resp = client.get("/api/interviewer/interviews")
+    assert resp.json() == []
+
+
+def test_second_active_interview_for_same_round_rejected_at_db_level(client, db_session):
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    admin = _admin_client(client, db_session)
+    position = _make_position(db_session, admin)
+    interviewer = User(
+        email="iv5@example.com", password_hash=hash_password("pw"), full_name="Ivy", role=UserRole.interviewer
+    )
+    db_session.add(interviewer)
+    db_session.commit()
+    db_session.refresh(interviewer)
+    candidate, round_ = _make_candidate_with_round(db_session, admin, position, interviewer)
+
+    db_session.add(
+        Interview(candidate_id=candidate.id, round_id=round_.id, scheduled_at=datetime.now(timezone.utc), created_by=admin.id)
+    )
+    db_session.commit()
+
+    db_session.add(
+        Interview(candidate_id=candidate.id, round_id=round_.id, scheduled_at=datetime.now(timezone.utc), created_by=admin.id)
+    )
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
 
 def test_interviewer_cannot_schedule_interviews(client, db_session):
     _admin_client(client, db_session)
@@ -158,6 +222,6 @@ def test_interviewer_cannot_schedule_interviews(client, db_session):
 
     resp = client.post(
         "/api/admin/interviews",
-        json={"candidate_id": 1, "interviewer_id": 1, "scheduled_at": datetime.now(timezone.utc).isoformat()},
+        json={"round_id": 1, "scheduled_at": datetime.now(timezone.utc).isoformat()},
     )
     assert resp.status_code == 403

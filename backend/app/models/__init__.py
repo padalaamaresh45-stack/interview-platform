@@ -1,8 +1,9 @@
 from app.models.candidate import Candidate, CandidateStatus
-from app.models.interview import Interview
+from app.models.interview import Interview, InterviewStatus
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round, RoundStatus
 from app.models.session import Session
 from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
@@ -20,4 +21,7 @@ __all__ = [
     "Stage",
     "CandidateStageTransition",
     "Interview",
+    "InterviewStatus",
+    "Round",
+    "RoundStatus",
 ]

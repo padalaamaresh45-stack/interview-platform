@@ -5,8 +5,10 @@ export interface Interview {
   candidate_id: number;
   candidate_name: string;
   position_title: string;
+  round_id: number;
   interviewer_id: number;
   interviewer_name: string;
+  status: "scheduled" | "cancelled";
   scheduled_at: string;
   duration_minutes: number;
   notes: string | null;
@@ -30,8 +32,7 @@ export async function listMyInterviews(): Promise<Interview[]> {
 }
 
 export async function scheduleInterview(
-  candidateId: number,
-  interviewerId: number,
+  roundId: number,
   scheduledAt: string,
   durationMinutes: number,
   notes?: string,
@@ -40,8 +41,7 @@ export async function scheduleInterview(
     await apiFetch("/api/admin/interviews", {
       method: "POST",
       body: JSON.stringify({
-        candidate_id: candidateId,
-        interviewer_id: interviewerId,
+        round_id: roundId,
         scheduled_at: scheduledAt,
         duration_minutes: durationMinutes,
         notes: notes || null,

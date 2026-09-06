@@ -13,6 +13,9 @@ class StageOut(BaseModel):
     sequence_order: int
     day_limit: int | None
     is_terminal: bool
+    advance_threshold: int | None
+    reject_threshold: int | None
+    feedback_grace_hours: int | None
 
     model_config = {"from_attributes": True}
 
@@ -28,7 +31,7 @@ class BoardCandidateOut(BaseModel):
     full_name: str
     position_id: int
     position_title: str
-    interviewer_id: int
+    owner_id: int | None
     status: CandidateStatus
     current_stage_id: int
     days_in_stage: int

@@ -65,6 +65,14 @@ def compute_next_action(
     return "Review scores and decide"
 
 
+def compute_current_owner(open_round) -> int | None:
+    """A candidate's current owner is the assignee of its single open Round —
+    never derived from a stored column. `open_round` is that Round (or None if
+    the candidate has none), fetched by the caller via the partial-unique-index
+    -backed query in app.pipeline.access.get_open_round."""
+    return open_round.assignee_id if open_round is not None else None
+
+
 def derive_candidate_fields(
     *,
     candidate_status: CandidateStatus,

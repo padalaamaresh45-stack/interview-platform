@@ -3,6 +3,7 @@ from app.auth.session import SESSION_COOKIE_NAME, create_session
 from app.models.candidate import Candidate
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round
 from app.models.stage import Stage
 from app.models.user import User, UserRole
 
@@ -45,10 +46,18 @@ def _make_candidate(db_session, admin, position, interviewer):
     candidate = Candidate(
         full_name="Cara Candidate",
         position_id=position.id,
-        interviewer_id=interviewer.id,
         created_by=admin.id,
     )
     db_session.add(candidate)
+    db_session.flush()
+    first_stage_id = (
+        db_session.query(Stage.id)
+        .filter(Stage.position_id == position.id)
+        .order_by(Stage.sequence_order)
+        .limit(1)
+        .scalar()
+    )
+    db_session.add(Round(candidate_id=candidate.id, stage_id=first_stage_id, assignee_id=interviewer.id))
     db_session.commit()
     db_session.refresh(candidate)
     return candidate
@@ -278,7 +287,8 @@ def test_candidate_history_includes_scores(client, db_session):
 
     from app.models.interview_score import InterviewScore
 
-    db_session.add(InterviewScore(candidate_id=candidate.id, question_id=question.id, score=4))
+    round_ = db_session.query(Round).filter(Round.candidate_id == candidate.id).first()
+    db_session.add(InterviewScore(candidate_id=candidate.id, round_id=round_.id, question_id=question.id, score=4))
     db_session.commit()
 
     resp = client.get(f"/api/pipeline/candidates/{candidate.id}")

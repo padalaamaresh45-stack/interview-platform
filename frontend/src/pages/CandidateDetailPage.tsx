@@ -31,7 +31,6 @@ export function CandidateDetailPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [interviewerId, setInterviewerId] = useState("");
 
   // The pipeline history (stage moves, scores) is a separate concern from the
   // edit form above — it loads and fails independently so a pipeline-service
@@ -59,7 +58,6 @@ export function CandidateDetailPage() {
       setFullName(candidateData.full_name);
       setEmail(candidateData.email ?? "");
       setPhone(candidateData.phone ?? "");
-      setInterviewerId(String(candidateData.interviewer_id));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -121,9 +119,6 @@ export function CandidateDetailPage() {
         email: email || null,
         phone: phone || null,
       };
-      if (Number(interviewerId) !== candidate.interviewer_id) {
-        updates.interviewer_id = Number(interviewerId);
-      }
       await updateCandidate(id, updates);
       await refresh();
     } catch (err) {
@@ -184,30 +179,15 @@ export function CandidateDetailPage() {
               <input id="candidate-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="field">
-              <label htmlFor="candidate-interviewer">Interviewer</label>
-              <select
-                id="candidate-interviewer"
-                value={interviewerId}
-                onChange={(e) => setInterviewerId(e.target.value)}
-                disabled={!canChangeAssignment}
-              >
-                {interviewers.map((interviewer) => (
-                  <option
-                    key={interviewer.id}
-                    value={interviewer.id}
-                    disabled={!interviewer.is_active && interviewer.id !== candidate.interviewer_id}
-                  >
-                    {interviewer.full_name}
-                    {!interviewer.is_active && " (deactivated)"}
-                  </option>
-                ))}
-              </select>
+              <label>Interviewer</label>
+              <p className="detail-meta">
+                {interviewers.find((iv) => iv.id === candidate.owner_id)?.full_name ??
+                  (candidate.owner_id ? `#${candidate.owner_id}` : "Unassigned")}
+              </p>
             </div>
             <button type="submit">Save</button>
           </form>
-          {!canChangeAssignment && (
-            <p className="detail-meta">Interviewer can only be reassigned while the candidate is not started.</p>
-          )}
+          <p className="detail-meta">Reassigning the interviewer isn't available yet.</p>
 
           <div className="panel-danger-zone">
             {canChangeAssignment ? (

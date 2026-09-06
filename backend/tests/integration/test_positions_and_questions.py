@@ -4,6 +4,8 @@ from app.models.candidate import Candidate
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round
+from app.models.stage import Stage
 from app.models.user import User, UserRole
 
 ADMIN_EMAIL = "admin@example.com"
@@ -101,12 +103,22 @@ def test_sequence_order_collision_returns_clean_400(client, db_session):
 
 
 def _make_candidate(db_session, admin, position, interviewer):
-    candidate = Candidate(
-        full_name="Cara Candidate", position_id=position.id, interviewer_id=interviewer.id, created_by=admin.id
-    )
+    candidate = Candidate(full_name="Cara Candidate", position_id=position.id, created_by=admin.id)
     db_session.add(candidate)
+    db_session.flush()
+    first_stage_id = (
+        db_session.query(Stage.id)
+        .filter(Stage.position_id == position.id)
+        .order_by(Stage.sequence_order)
+        .limit(1)
+        .scalar()
+    )
+    round_ = Round(candidate_id=candidate.id, stage_id=first_stage_id, assignee_id=interviewer.id)
+    db_session.add(round_)
     db_session.commit()
     db_session.refresh(candidate)
+    db_session.refresh(round_)
+    candidate.round_id = round_.id  # test convenience, not a real column
     return candidate
 
 
@@ -117,7 +129,9 @@ def test_edit_question_text_with_existing_scores_succeeds_and_leaves_scores_unto
     interviewer = _make_user(db_session, email="iv@example.com", role=UserRole.interviewer)
     candidate = _make_candidate(db_session, admin, position, interviewer)
 
-    score = InterviewScore(question_id=question.id, candidate_id=candidate.id, score=4, comment="Solid answer.")
+    score = InterviewScore(
+        question_id=question.id, candidate_id=candidate.id, round_id=candidate.round_id, score=4, comment="Solid answer."
+    )
     db_session.add(score)
     db_session.commit()
     db_session.refresh(score)
@@ -151,7 +165,9 @@ def test_delete_question_with_scores_returns_400_naming_count(client, db_session
 
     for i in range(3):
         candidate = _make_candidate(db_session, admin, position, interviewer)
-        db_session.add(InterviewScore(question_id=question.id, candidate_id=candidate.id, score=3))
+        db_session.add(
+            InterviewScore(question_id=question.id, candidate_id=candidate.id, round_id=candidate.round_id, score=3)
+        )
     db_session.commit()
 
     resp = client.delete(f"/api/admin/questions/{question.id}")

@@ -12,6 +12,7 @@ const mockGetMyCandidate = vi.mocked(getMyCandidate);
 const mockSubmitScores = vi.mocked(submitScores);
 
 const CANDIDATE_ID = 42;
+const ROUND_ID = 100;
 const DRAFT_KEY = `interview-draft-${CANDIDATE_ID}`;
 
 const notStartedCandidate = {
@@ -20,6 +21,7 @@ const notStartedCandidate = {
   email: null,
   phone: null,
   position_id: 1,
+  round_id: ROUND_ID,
   status: "not_started" as const,
   questions: [
     { id: 1, position_id: 1, question_text: "Question one?", sequence_order: 1, created_at: "", updated_at: "" },

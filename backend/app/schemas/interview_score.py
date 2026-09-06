@@ -36,5 +36,6 @@ class InterviewerCandidateDetail(BaseModel):
     phone: str | None
     position_id: int
     status: CandidateStatus
+    round_id: int | None
     questions: list[QuestionOut]
     scores: list[InterviewScoreOut]

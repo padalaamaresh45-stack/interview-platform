@@ -1,5 +1,20 @@
+from dataclasses import dataclass
+
 from app.models.candidate import CandidateStatus
-from app.pipeline.derive import compute_health, compute_next_action
+from app.pipeline.derive import compute_current_owner, compute_health, compute_next_action
+
+
+@dataclass
+class _FakeRound:
+    assignee_id: int
+
+
+def test_compute_current_owner_none_when_no_open_round():
+    assert compute_current_owner(None) is None
+
+
+def test_compute_current_owner_returns_assignee_when_open_round_present():
+    assert compute_current_owner(_FakeRound(assignee_id=42)) == 42
 
 
 def test_compute_health_on_track_when_under_limit():

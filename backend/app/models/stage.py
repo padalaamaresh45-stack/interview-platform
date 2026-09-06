@@ -22,4 +22,7 @@ class Stage(Base):
     sequence_order: Mapped[int] = mapped_column(Integer, nullable=False)
     day_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_terminal: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    advance_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reject_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    feedback_grace_hours: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default="48")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

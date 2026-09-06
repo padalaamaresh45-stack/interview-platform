@@ -20,7 +20,7 @@ export interface BoardCandidate {
   full_name: string;
   position_id: number;
   position_title: string;
-  interviewer_id: number;
+  owner_id: number | null;
   status: "not_started" | "completed";
   current_stage_id: number;
   days_in_stage: number;

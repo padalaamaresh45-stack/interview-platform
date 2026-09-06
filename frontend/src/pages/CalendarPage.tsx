@@ -8,7 +8,7 @@ import {
   scheduleInterview,
   type Interview,
 } from "../api/interviews";
-import { listCandidates, listActiveInterviewers, type Candidate, type Interviewer } from "../api/candidates";
+import { listCandidates, type Candidate } from "../api/candidates";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -43,7 +43,6 @@ export function CalendarPage() {
 
   const [interviews, setInterviews] = useState<Interview[] | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const today = useMemo(() => new Date(), []);
@@ -51,7 +50,6 @@ export function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState(() => toDateKey(today));
 
   const [candidateId, setCandidateId] = useState("");
-  const [interviewerId, setInterviewerId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [duration, setDuration] = useState("60");
   const [notes, setNotes] = useState("");
@@ -70,27 +68,27 @@ export function CalendarPage() {
   useEffect(() => {
     refresh();
     if (isAdmin) {
-      Promise.all([listCandidates(), listActiveInterviewers()]).then(([c, iv]) => {
-        setCandidates(c);
-        setInterviewers(iv);
-      });
+      listCandidates().then(setCandidates);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   async function handleSchedule(e: FormEvent) {
     e.preventDefault();
+    const candidate = candidates.find((c) => c.id === Number(candidateId));
+    if (!candidate?.open_round_id) {
+      setError("This candidate has no open round to schedule against.");
+      return;
+    }
     setScheduling(true);
     try {
       await scheduleInterview(
-        Number(candidateId),
-        Number(interviewerId),
+        candidate.open_round_id,
         new Date(scheduledAt).toISOString(),
         Number(duration),
         notes,
       );
       setCandidateId("");
-      setInterviewerId("");
       setScheduledAt("");
       setDuration("60");
       setNotes("");
@@ -164,24 +162,6 @@ export function CalendarPage() {
               {candidates.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="cal-interviewer">Interviewer</label>
-            <select
-              id="cal-interviewer"
-              value={interviewerId}
-              onChange={(e) => setInterviewerId(e.target.value)}
-              required
-            >
-              <option value="" disabled>
-                Select an interviewer
-              </option>
-              {interviewers.map((iv) => (
-                <option key={iv.id} value={iv.id}>
-                  {iv.full_name}
                 </option>
               ))}
             </select>

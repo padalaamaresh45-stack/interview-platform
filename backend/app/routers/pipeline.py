@@ -11,7 +11,8 @@ from app.models.question import Question
 from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User
-from app.pipeline.derive import derive_candidate_fields
+from app.pipeline.access import get_open_rounds
+from app.pipeline.derive import compute_current_owner, derive_candidate_fields
 from app.schemas.pipeline import (
     BoardCandidateOut,
     BoardColumnOut,
@@ -109,6 +110,7 @@ def get_board(
     latest_transitions = _latest_transitions_by_candidate(db, [c.id for c in candidates])
     question_counts = _question_counts_by_position(db, list(positions.keys()))
     scores_by_candidate = _scores_by_candidate(db, [c.id for c in candidates])
+    open_rounds = get_open_rounds(db, [c.id for c in candidates])
 
     columns: dict[int, list[BoardCandidateOut]] = {stage.id: [] for stage in stages}
     for candidate in candidates:
@@ -137,7 +139,7 @@ def get_board(
                 full_name=candidate.full_name,
                 position_id=candidate.position_id,
                 position_title=position.title if position else f"#{candidate.position_id}",
-                interviewer_id=candidate.interviewer_id,
+                owner_id=compute_current_owner(open_rounds.get(candidate.id)),
                 status=candidate.status,
                 current_stage_id=stage.id,
                 days_in_stage=derived.days_in_stage,

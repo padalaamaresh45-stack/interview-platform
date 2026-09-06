@@ -20,6 +20,7 @@ from app.models.candidate import Candidate, CandidateStatus
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round, RoundStatus
 from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User, UserRole
@@ -94,9 +95,15 @@ def main() -> None:
             new_name = CANDIDATE_RENAMES.get(candidate.full_name)
             if new_name:
                 candidate.full_name = new_name
-            interviewer = db.get(User, candidate.interviewer_id)
-            if interviewer is not None and not interviewer.is_active:
-                candidate.interviewer_id = interviewers[0].id
+            open_round = (
+                db.query(Round)
+                .filter(Round.candidate_id == candidate.id, Round.status == RoundStatus.open)
+                .first()
+            )
+            if open_round is not None:
+                interviewer = db.get(User, open_round.assignee_id)
+                if interviewer is not None and not interviewer.is_active:
+                    open_round.assignee_id = interviewers[0].id
         db.flush()
 
         now = datetime.now(timezone.utc)
@@ -129,12 +136,17 @@ def main() -> None:
                 candidate = Candidate(
                     full_name=full_name,
                     position_id=position.id,
-                    interviewer_id=interviewer.id,
                     created_by=admin.id,
                     status=CandidateStatus.completed if score is not None else CandidateStatus.not_started,
                 )
                 db.add(candidate)
                 db.flush()  # after_insert event writes the "Applied" transition
+                round_status = RoundStatus.scored if score is not None else RoundStatus.open
+                round_ = Round(
+                    candidate_id=candidate.id, stage_id=stage.id, assignee_id=interviewer.id, status=round_status
+                )
+                db.add(round_)
+                db.flush()
 
                 entered_at = now - timedelta(days=days_ago)
                 if stage_name != "Applied":
@@ -156,7 +168,11 @@ def main() -> None:
                     ).update({"created_at": entered_at})
 
                 if score is not None and question is not None:
-                    db.add(InterviewScore(candidate_id=candidate.id, question_id=question.id, score=score))
+                    db.add(
+                        InterviewScore(
+                            candidate_id=candidate.id, round_id=round_.id, question_id=question.id, score=score
+                        )
+                    )
 
                 added += 1
 

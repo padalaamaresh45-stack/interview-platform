@@ -26,6 +26,7 @@ export interface CandidateDetail {
   phone: string | null;
   position_id: number;
   status: "not_started" | "completed";
+  round_id: number | null;
   questions: InterviewQuestion[];
   scores: ExistingScore[];
 }
@@ -52,9 +53,9 @@ export interface ScoreSubmission {
   comment?: string | null;
 }
 
-export async function submitScores(candidateId: number, scores: ScoreSubmission[]): Promise<Candidate> {
+export async function submitScores(roundId: number, scores: ScoreSubmission[]): Promise<Candidate> {
   return parseOrThrow(
-    await apiFetch(`/api/interviewer/candidates/${candidateId}/scores`, {
+    await apiFetch(`/api/interviewer/rounds/${roundId}/scores`, {
       method: "POST",
       body: JSON.stringify({ scores }),
     }),

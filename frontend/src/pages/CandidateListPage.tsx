@@ -67,7 +67,8 @@ export function CandidateListPage() {
   }
 
   const positionTitle = (id: number) => positions.find((p) => p.id === id)?.title ?? `#${id}`;
-  const interviewerName = (id: number) => {
+  const interviewerName = (id: number | null) => {
+    if (id === null) return "Unassigned";
     const interviewer = allInterviewers.find((i) => i.id === id);
     if (interviewer === undefined) return `#${id}`;
     return interviewer.is_active ? interviewer.full_name : `${interviewer.full_name} (deactivated)`;
@@ -161,7 +162,7 @@ export function CandidateListPage() {
                   <Link to={`/candidates/${candidate.id}`}>{candidate.full_name}</Link>
                 </td>
                 <td>{positionTitle(candidate.position_id)}</td>
-                <td>{interviewerName(candidate.interviewer_id)}</td>
+                <td>{interviewerName(candidate.owner_id)}</td>
                 <td>
                   <span
                     className={`status-pill ${candidate.status === "completed" ? "status-active" : ""}`}

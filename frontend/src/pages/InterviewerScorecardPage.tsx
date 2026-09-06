@@ -70,7 +70,7 @@ export function InterviewerScorecardPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (candidate === null) return;
+    if (candidate === null || candidate.round_id === null) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -79,7 +79,7 @@ export function InterviewerScorecardPage() {
         score: Number(draft[q.id]?.score ?? 0),
         comment: draft[q.id]?.comment || null,
       }));
-      await submitScores(id, scores);
+      await submitScores(candidate.round_id, scores);
       clearDraft(id);
       navigate("/my-candidates");
     } catch (err) {

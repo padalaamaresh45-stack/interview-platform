@@ -6,8 +6,11 @@ export interface Candidate {
   email: string | null;
   phone: string | null;
   position_id: number;
-  interviewer_id: number;
+  owner_id: number | null;
+  open_round_id: number | null;
   status: "not_started" | "completed";
+  hold_reason: string | null;
+  hold_review_by: string | null;
   created_by: number;
   created_at: string;
   updated_at: string;
@@ -56,7 +59,7 @@ export async function createCandidate(
 
 export async function updateCandidate(
   id: number,
-  updates: Partial<Pick<Candidate, "full_name" | "email" | "phone" | "interviewer_id">>,
+  updates: Partial<Pick<Candidate, "full_name" | "email" | "phone">>,
 ): Promise<Candidate> {
   return parseOrThrow(
     await apiFetch(`/api/admin/candidates/${id}`, {

@@ -6,17 +6,20 @@ from app.database import get_db
 from app.models.candidate import Candidate, CandidateStatus
 from app.models.interview_score import InterviewScore
 from app.models.question import Question
+from app.models.round import Round, RoundStatus
 from app.models.user import User
+from app.pipeline.access import candidate_to_out, get_open_round, interviewer_has_access
 from app.schemas.candidate import CandidateOut
 from app.schemas.interview_score import InterviewerCandidateDetail, ScoreSubmitRequest
 from app.scoring.submit import submit_scores
 
 router = APIRouter(prefix="/api/interviewer/candidates", tags=["interviewer"])
+rounds_router = APIRouter(prefix="/api/interviewer/rounds", tags=["interviewer"])
 
 
 def _get_own_candidate_or_404(db: DBSession, candidate_id: int, interviewer: User) -> Candidate:
     candidate = db.get(Candidate, candidate_id)
-    if candidate is None or candidate.interviewer_id != interviewer.id:
+    if candidate is None or not interviewer_has_access(db, candidate_id, interviewer.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found.")
     return candidate
 
@@ -26,12 +29,18 @@ def list_my_candidates(
     db: DBSession = Depends(get_db),
     interviewer: User = Depends(require_interviewer),
 ):
-    return (
+    candidates = (
         db.query(Candidate)
-        .filter(Candidate.interviewer_id == interviewer.id, Candidate.status == CandidateStatus.not_started)
+        .join(Round, Round.candidate_id == Candidate.id)
+        .filter(
+            Round.assignee_id == interviewer.id,
+            Round.status == RoundStatus.open,
+            Candidate.status == CandidateStatus.not_started,
+        )
         .order_by(Candidate.id)
         .all()
     )
+    return [candidate_to_out(db, c) for c in candidates]
 
 
 @router.get("/{candidate_id}", response_model=InterviewerCandidateDetail)
@@ -48,6 +57,7 @@ def get_my_candidate(
         .all()
     )
     scores = db.query(InterviewScore).filter(InterviewScore.candidate_id == candidate.id).all()
+    open_round = get_open_round(db, candidate.id)
     return InterviewerCandidateDetail(
         id=candidate.id,
         full_name=candidate.full_name,
@@ -55,20 +65,23 @@ def get_my_candidate(
         phone=candidate.phone,
         position_id=candidate.position_id,
         status=candidate.status,
+        round_id=open_round.id if open_round is not None else None,
         questions=questions,
         scores=scores,
     )
 
 
-@router.post("/{candidate_id}/scores", response_model=CandidateOut)
-def submit_candidate_scores(
-    candidate_id: int,
+@rounds_router.post("/{round_id}/scores", response_model=CandidateOut)
+def submit_round_scores(
+    round_id: int,
     payload: ScoreSubmitRequest,
     db: DBSession = Depends(get_db),
     interviewer: User = Depends(require_interviewer),
 ):
-    # Ownership and the completed-status check both happen inside submit_scores'
-    # single locked fetch of the Candidate — no separate unlocked read of the same
-    # row happens first in this session/request. See submit_scores' docstring for
-    # why an earlier read here would be a correctness bug, not just redundant.
-    return submit_scores(db, candidate_id, interviewer.id, payload.scores)
+    # Ownership and the already-scored check both happen inside submit_scores'
+    # single locked fetch of the Round — no separate unlocked read of the same
+    # row happens first in this session/request. See submit_scores' docstring
+    # for why an earlier read here would be a correctness bug, not just
+    # redundant.
+    candidate = submit_scores(db, round_id, interviewer.id, payload.scores)
+    return candidate_to_out(db, candidate)

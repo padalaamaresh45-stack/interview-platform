@@ -17,6 +17,7 @@ from app.models.candidate import Candidate, CandidateStatus
 from app.models.interview_score import InterviewScore
 from app.models.position import Position
 from app.models.question import Question
+from app.models.round import Round, RoundStatus
 from app.models.stage import Stage
 from app.models.stage_transition import CandidateStageTransition
 from app.models.user import User, UserRole
@@ -91,12 +92,15 @@ def main() -> None:
             candidate = Candidate(
                 full_name=full_name,
                 position_id=position.id,
-                interviewer_id=interviewer.id,
                 created_by=admin.id,
                 status=CandidateStatus.completed if score is not None else CandidateStatus.not_started,
             )
             db.add(candidate)
             db.flush()  # after_insert event writes the "Applied" transition
+            round_status = RoundStatus.scored if score is not None else RoundStatus.open
+            round_ = Round(candidate_id=candidate.id, stage_id=stage.id, assignee_id=interviewer.id, status=round_status)
+            db.add(round_)
+            db.flush()
 
             entered_at = now - timedelta(days=days_ago)
             if stage_name != "Applied":
@@ -122,7 +126,11 @@ def main() -> None:
                 ).update({"created_at": entered_at})
 
             if score is not None:
-                db.add(InterviewScore(candidate_id=candidate.id, question_id=question.id, score=score))
+                db.add(
+                    InterviewScore(
+                        candidate_id=candidate.id, round_id=round_.id, question_id=question.id, score=score
+                    )
+                )
 
         db.commit()
         print(f"Seeded {len(demo_candidates)} demo candidates under {DEMO_POSITION_TITLE!r}.")

@@ -1,7 +1,7 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, event, func, select
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, String, event, func, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -20,12 +20,13 @@ class Candidate(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     position_id: Mapped[int] = mapped_column(Integer, ForeignKey("positions.id"), nullable=False)
-    interviewer_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     status: Mapped[CandidateStatus] = mapped_column(
         Enum(CandidateStatus, name="candidate_status"),
         nullable=False,
         server_default=CandidateStatus.not_started.value,
     )
+    hold_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    hold_review_by: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
